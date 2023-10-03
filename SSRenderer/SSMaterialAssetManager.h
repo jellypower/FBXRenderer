@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SSNativeTypes.h"
-#include "SSMaterial.h"
+#include "SSMaterialAsset.h"
 
 class SSShaderAssetManager;
 
@@ -17,13 +17,13 @@ public:
 	void ReleaseAllMaterialsTemp();
 	
 public:
-	__forceinline SSMaterial* GetMaterialWithIdx(uint8 idx) { return MaterialList[idx]; }
+	__forceinline SSMaterialAsset* GetMaterialWithIdx(uint32 idx) { return MaterialList[idx]; }
 
 private:
 
 	static constexpr uint8 DEFAULT_POOL_SIZE = 10;
 	uint8 MaterialPoolCount = 0;
-	SSMaterial** MaterialList;
+	SSMaterialAsset** MaterialList;
 
 
 };

@@ -16,10 +16,6 @@ enum class ShaderAssetInstanceStage {
 	Instantiated
 };
 
-// TODO: ShaderMetaInfo를 활용해서 실제 셰이더의 자료형이라던가, 버퍼 크기라던가 저장하기.
-struct ShaderMetaInfo {
-
-};
 
 class SSShaderAsset
 {
@@ -30,7 +26,7 @@ public:
 	
 	HRESULT InstantiateShader(ID3D11Device* InDevice);
 	
-
+	void Release();
 
 	// TODO: Shader에 이름 지어주고 GetName함수 만들어주기
 
@@ -38,12 +34,9 @@ public:
 
 	// TODO: 지금은 셰이더당 버퍼가 있는데 셰이더당 버퍼가 아니라 메테리얼당 버퍼가 있어야 한다
 
-	__forceinline void UpdateShaderWVPTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
-	void UpdateAllShaderCBData(ID3D11DeviceContext* InDeviceContext, void** InConstBufferData, uint8 InConstBufferCount);
 	void BindShaderAsset(ID3D11DeviceContext* DeviceContext);
 
 
-	~SSShaderAsset();
 
 public:
 	__forceinline ShaderAssetInstanceStage GetShaderInstanceStage() const { return CurStage; }
@@ -70,20 +63,9 @@ private:
 	uint8 layoutElemCount = 0;
 
 
-	// TODO: 지금은 단순 배열로 만들지만 Constant Buffer, Texture List를 Hashstring을 사용한 Map으로 변경하자
-	// TODO: Shader CBParamType enum 만들기, Shader TextureParamType enum 만들기
-	
 
-	ID3D11Buffer* ConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
-	ID3D11Buffer* VSConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
-	ID3D11Buffer* PSConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
 
 	SSShaderReflectionForMaterial ShaderReflection;
 
 
 };
-
-inline void SSShaderAsset::UpdateShaderWVPTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
-{
-	InDeviceContext->UpdateSubresource(ConstantBuffers[WVP_TRANSFOMRM_IDX], 0, nullptr, &InMatrix, 0, 0);
-}

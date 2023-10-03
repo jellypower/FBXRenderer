@@ -10,10 +10,11 @@
 
 enum class MaterialAssetInstanceStage {
 	JustCreated = 0,
-	Initialized = 1
+	Initialized = 1,
+	Instantiated,
 };
 
-class SSMaterial // Material은 에셋 계념이 아닌 인스턴스 개념으로 가자
+class SSMaterialAsset // Material은 에셋 계념이 아닌 인스턴스 개념으로 가자
 {
 public:
 
@@ -25,17 +26,27 @@ public:
 	void BindMaterial(ID3D11DeviceContext* InDeviceContext);
 	bool IsBindingPossible() { return MaterialStage >= MaterialAssetInstanceStage::Initialized; }
 
-	void UpdateParameter(int idx, const void* InData, uint32 InDataSize);
+	void UpdateParameter(ID3D11DeviceContext* InDeviceContext, int idx, const void* InData, uint32 InDataSize);
 	
+	HRESULT InstantiateShader(ID3D11Device* InDevice);
 
 	__forceinline void UpdateWVPMatrix(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
 
 	__forceinline MaterialAssetInstanceStage GetMaterialStage() const { return MaterialStage; }
 
+	void UpdateAllShaderCBData(ID3D11DeviceContext* InDeviceContext, void** InConstBufferData, uint8 InConstBufferCount);
+
+
+
 protected:
 	void* ConstBufferData[CONSTANT_BUFFER_COUNT_MAX] = { 0, };
 
 private:
+
+
+	ID3D11Buffer* ConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
+	ID3D11Buffer* VSConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
+	ID3D11Buffer* PSConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
 
 
 	class SSShaderAsset* Shader = nullptr;
@@ -53,9 +64,7 @@ private:
 	// TODO: MeshRenderer 만들기 (버텍스와 쉐이더를 가지고 실제 메쉬를 그리는 놈)
 };
 
-
-inline void SSMaterial::UpdateWVPMatrix(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
+inline void SSMaterialAsset::UpdateWVPMatrix(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
 {
-	Shader->UpdateShaderWVPTransform(InDeviceContext, InMatrix);
+	InDeviceContext->UpdateSubresource(ConstantBuffers[WVP_TRANSFOMRM_IDX], 0, nullptr, &InMatrix, 0, 0);
 }
-

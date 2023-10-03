@@ -1,12 +1,13 @@
-/*
+
 #include "SSModelAsset.h"
 
-#include "SSMaterial.h"
+#include "SSMaterialAsset.h"
 #include "SSGeometryAsset.h"
 
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 
-SSModelAsset::SSModelAsset(SSMaterial* InMaterial, SSGeometryAsset* InGeometry)
+
+void SSModelAsset::InitTemp(SSMaterialAsset* InMaterial, SSGeometryAsset* InGeometry)
 {
 	if (InMaterial == nullptr) {
 		SS_CLASS_ERR_LOG("No Material");
@@ -20,6 +21,7 @@ SSModelAsset::SSModelAsset(SSMaterial* InMaterial, SSGeometryAsset* InGeometry)
 	Material = InMaterial;
 	Geometry = InGeometry;
 
+	InstanceStage = ModelAssetInstanceStage::MaterialGeometryBound;
 }
 
 void SSModelAsset::BindModel(ID3D11DeviceContext* InDeviceContext)
@@ -29,11 +31,10 @@ void SSModelAsset::BindModel(ID3D11DeviceContext* InDeviceContext)
 		SS_CLASS_ERR_LOG("Material of Asset is not bindable");
 		return;
 	}
+
 	if (Geometry->IsBindingPossible()) Geometry->BindGeometry(InDeviceContext);
 	else {
 		SS_CLASS_ERR_LOG("Material of Asset is not bindable");
 		return;
 	}
 }
-
-*/

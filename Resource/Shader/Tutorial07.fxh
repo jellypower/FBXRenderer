@@ -58,6 +58,9 @@ PS_INPUT VS( VS_INPUT input )
 //--------------------------------------------------------------------------------------
 float4 PS( PS_INPUT input) : SV_Target
 {
-    return txDiffuse.Sample(samLinear, input.Tex) * vMeshColor;
+    float4 color = txDiffuse.Sample(samLinear, input.Tex) * vMeshColor;
+    return color;
+
+//    return txDiffuse.Sample(samLinear, input.Tex) * vMeshColor;
     // samLinear라는 샘플링 기법
 }

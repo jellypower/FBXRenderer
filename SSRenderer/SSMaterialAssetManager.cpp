@@ -1,12 +1,12 @@
 #include "SSMaterialAssetManager.h"
 #include "SSShaderAssetManager.h"
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 #include "SSTextureManager.h"
 
 
 void SSMaterialAssetManager::Init()
 {
-	MaterialList = new SSMaterial * [DEFAULT_POOL_SIZE];
+	MaterialList = new SSMaterialAsset * [DEFAULT_POOL_SIZE];
 }
 
 void SSMaterialAssetManager::Release()
@@ -17,9 +17,11 @@ void SSMaterialAssetManager::Release()
 HRESULT SSMaterialAssetManager::InstantiateAllMaterialsTemp(ID3D11Device* InDevice
 	, SSShaderAssetManager* InShaderManager, SSTextureManager* InTextureManager)
 {
-	MaterialList[MaterialPoolCount++] = new SSMaterial();
+	MaterialList[MaterialPoolCount++] = new SSMaterialAsset();
 	HRESULT hr = MaterialList[0]->InitTemp(InDevice
 		, InShaderManager->GetShaderAsset(0), InTextureManager);
+
+	hr = MaterialList[0]->InstantiateShader(InDevice);
 
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG("material instantiate failed.");

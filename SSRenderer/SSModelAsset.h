@@ -1,10 +1,10 @@
-/*#pragma once
+#pragma once
 #include "SSEngineDefault/SSNativeTypes.h"
 
 #include <d3d11.h>
 
 class SSGeometryAsset;
-class SSMaterial;
+class SSMaterialAsset;
 
 enum class ModelAssetInstanceStage {
 	JustCreated,
@@ -15,7 +15,8 @@ enum class ModelAssetInstanceStage {
 class SSModelAsset
 {
 public:
-	SSModelAsset(SSMaterial* InMaterial, SSGeometryAsset* InGeometry);
+
+	void InitTemp(SSMaterialAsset* InMaterial, SSGeometryAsset* InGeometry);
 	
 	void BindModel(ID3D11DeviceContext* InDeviceContext);
 
@@ -25,10 +26,8 @@ private:
 	ModelAssetInstanceStage InstanceStage = ModelAssetInstanceStage::JustCreated;
 
 	SSGeometryAsset* Geometry = nullptr;
-	SSMaterial* Material = nullptr;
+	SSMaterialAsset* Material = nullptr;
 
 	Transform transform;
 
 };
-
-*/

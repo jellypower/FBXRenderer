@@ -11,7 +11,7 @@
 #include "SSMaterialAssetManager.h"
 #include "SSTextureManager.h"
 #include "SSGeometryAssetManager.h"
-
+#include "SSFBXImporter/SSFBXImporter.h"
 
 class SSRenderer {
 public:
@@ -20,6 +20,7 @@ public:
 	HRESULT InitShaderManager();
 	HRESULT InitMaterialManager();
 	HRESULT InitGeometryManager();
+	HRESULT InitModelAssetManager();
 	void InitCameraTemp();
 	void CleanUp();
 
@@ -60,6 +61,7 @@ private:
 	SSMaterialAssetManager MaterialManager;
 	SSTextureManager TextureManager;
 	SSGeometryAssetManager GeometryManager;
+	SSFBXImporter FbxImporter;
 
 	class SSCamera* RenderTarget;
 

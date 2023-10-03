@@ -3,7 +3,7 @@
 
 #include "SSCamera.h"
 #include "../ExternalUtils/ExternalUtils.h"
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 
 
 
@@ -216,9 +216,8 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		SS_LOG("Error(SSRenderer::InitGeometryManager): Init geometry manager init failed.");
 		return hr;
 	}
-	
-	// TODO: 여기부터 하기
 
+	
 
 	InitCameraTemp();
 
@@ -265,11 +264,11 @@ HRESULT SSRenderer::InitMaterialManager()
 
 	// HACK: Temp implementation
 	{ 
-		SSMaterial* mat = MaterialManager.GetMaterialWithIdx(0);
+		SSMaterialAsset* mat = MaterialManager.GetMaterialWithIdx(0);
 		mat->UpdateWVPMatrix(DeviceContext, XMMatrixIdentity());
 
 		XMVECTOR ZeroVector = XMVectorZero();
-		mat->UpdateParameter(1, &ZeroVector, sizeof(XMVECTOR));
+		mat->UpdateParameter(DeviceContext, 1, &ZeroVector, sizeof(XMVECTOR));
 	}
 
 	return hr;
@@ -292,6 +291,11 @@ HRESULT SSRenderer::InitGeometryManager()
 	return hr;
 }
 
+HRESULT SSRenderer::InitModelAssetManager()
+{
+	return E_NOTIMPL;
+}
+
 void SSRenderer::InitCameraTemp()
 {
 	RenderTarget = new SSCamera();
@@ -300,6 +304,7 @@ void SSRenderer::InitCameraTemp()
 	RenderTarget->SetFOVWithRadians(XM_PIDIV4);
 	RenderTarget->SetNearFarZ(0.01f, 100.f);
 }
+
 
 void SSRenderer::CleanUp()
 {
@@ -349,7 +354,7 @@ void SSRenderer::PerFrameTemp()
 		MeshColor.X = (sinf(ElapsedTime * 1.0f) + 1.0f) * 0.5f;
 		MeshColor.Y = (cosf(ElapsedTime * 3.0f) + 1.0f) * 0.5f;
 		MeshColor.Z = (sinf(ElapsedTime * 5.0f) + 1.0f) * 0.5f;
-		MaterialManager.GetMaterialWithIdx(0)->UpdateParameter(1, &MeshColor, sizeof(Vector4f));
+		MaterialManager.GetMaterialWithIdx(0)->UpdateParameter(DeviceContext, 1, &MeshColor, sizeof(Vector4f));
 
 		Transform transform;
 		transform.Rotation.Y = ElapsedTime;
@@ -360,7 +365,7 @@ void SSRenderer::PerFrameTemp()
 			XMMatrixTranspose(XMMatrixRotationY(ElapsedTime) * RenderTarget->GetViewProjMatrix()));
 	}
 
-	SSMaterial* Material = MaterialManager.GetMaterialWithIdx(0);
+	SSMaterialAsset* Material = MaterialManager.GetMaterialWithIdx(0);
 	Material->BindMaterial(DeviceContext);
 	
 
@@ -377,7 +382,7 @@ void SSRenderer::CalcDeltaTime()
 {
 	CurTime = GetTickCount64();
 	if (StartTime == 0) {
-		StartTime = CurTime;
+		StartTime = CurTime; 
 		SS_LOG("Reset Start time\n");
 	}
 	ElapsedTime = (CurTime - StartTime) / 1000.0f;

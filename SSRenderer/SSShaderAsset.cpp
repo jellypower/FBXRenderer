@@ -1,12 +1,18 @@
 #include "SSShaderAsset.h"
 
 
-#include "ExternalUtils/ExternalUtils.h"
-
-#include "SSDebug.h"
 
 #include <directxmath.h>
 #include <wrl.h>
+
+
+#include "ExternalUtils/ExternalUtils.h"
+
+#include "SSDebugLogger.h"
+// if new operator is defined by someone, #define new new (_NORMAL_BLOCK , __FILE__ , __LINE__) not works
+// And In the case of wrl.h, It defines new operator not to dynamically allocate the ComPtr objects
+// To solve this problem, We must define new operator after including wrl.h 
+
 
 using namespace DirectX;
 namespace WRL = Microsoft::WRL; // Windows Runtime Library
@@ -74,7 +80,7 @@ HRESULT SSShaderAsset::CompileShader()
 			WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %s) Reflection failed.\n", ShaderName);
 			return E_FAIL;
 		}
-		
+
 		hr = D3DReflect(PSBlob->GetBufferPointer(), PSBlob->GetBufferSize(), IID_ID3D11ShaderReflection, (void**)PixelShaderReflection.GetAddressOf());
 		if (FAILED(hr)) {
 			VSBlob->Release();
@@ -167,7 +173,7 @@ HRESULT SSShaderAsset::CompileShader()
 				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %s) Vertex shader const buffer reflection failed.\n", ShaderName);
 				return hr;
 			}
-			
+
 			int BufferSize = ShaderReflection.VSCBReflectionInfo[i].CBSize = bufferDesc.Size;
 			int SlotIdx = ShaderReflection.VSCBReflectionInfo[i].CBSlotIdx = bufferBindDesc.BindPoint;
 			ShaderReflection.VSCBReflectionInfo[i].bCBUsedByVSShader = true;
@@ -180,15 +186,18 @@ HRESULT SSShaderAsset::CompileShader()
 
 				ShaderReflection.EntireCBReflectionInfo[ShaderReflection.EntireConstBufferNum]
 					= ShaderReflection.VSCBReflectionInfo[i];
+				// TODO: 이거 ShaderReflection.EntireCBReflectionInfo[ShaderReflection.EntireConstBufferNum] 가 아니라
+				// ShaderReflection.EntireCBReflectionInfo[SlotIdx] 아닌가?
+
 				// TODO: 복사시에 어셈블리 체크하기
 
 
 				ShaderReflection.EntireConstBufferNum++;
 
 			}
-			
-				
-			SS_LOG("%s\n",bufferDesc.Name);
+
+
+			SS_LOG("%s\n", bufferDesc.Name);
 		}
 
 
@@ -212,7 +221,7 @@ HRESULT SSShaderAsset::CompileShader()
 				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %s) Pixel shader const buffer reflection failed.\n", ShaderName);
 				return hr;
 			}
-	
+
 			int BufferSize = ShaderReflection.PSCBReflectionInfo[i].CBSize = bufferDesc.Size;
 			int SlotIdx = ShaderReflection.PSCBReflectionInfo[i].CBSlotIdx = bufferBindDesc.BindPoint;
 			ShaderReflection.PSCBReflectionInfo[i].bCBUsedByPSShader = true;
@@ -228,7 +237,7 @@ HRESULT SSShaderAsset::CompileShader()
 
 
 				ShaderReflection.EntireConstBufferNum++;
-				
+
 			}
 
 			SS_LOG("%s\n", bufferDesc.Name);
@@ -258,7 +267,7 @@ HRESULT SSShaderAsset::CompileShader()
 			default: break;
 			}
 		}
-		
+
 
 	}
 
@@ -306,36 +315,6 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 		return hr;
 	}
 
-	uint8 CurVSCBIdx = 0;
-	uint8 CurPSCBIdx = 0;
-
-	for (uint8 i = 0; i < ShaderReflection.EntireConstBufferNum; i++) {
-		D3D11_BUFFER_DESC bd = {};
-		bd.Usage = D3D11_USAGE_DEFAULT; // TODO: 나중에 dynamic으로 바꿔보기
-		bd.ByteWidth = ShaderReflection.EntireCBReflectionInfo[i].CBSize;
-		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bd.CPUAccessFlags = 0;
-
-
-		hr = InDevice->CreateBuffer(&bd, nullptr, &ConstantBuffers[i]);
-
-		InDevice->SetPrivateData(WKPDID_D3DDebugObjectName, 8, "Constant");
-
-
-		if (ShaderReflection.EntireCBReflectionInfo[i].bCBUsedByVSShader) {
-			VSConstantBuffers[CurVSCBIdx++] = ConstantBuffers[i];
-		}
-
-		if (ShaderReflection.EntireCBReflectionInfo[i].bCBUsedByPSShader) {
-			PSConstantBuffers[CurPSCBIdx++] = ConstantBuffers[i];
-		}
-
-		if (FAILED(hr)) {
-			WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Shader[%s] Create ConstBuffer[%d] creation failed.\n", ShaderName, i);
-			return hr;
-		}
-	}
-
 	VSBlob->Release();
 	VSBlob = nullptr;
 	PSBlob->Release();
@@ -347,14 +326,6 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 }
 
 
-
-
-void SSShaderAsset::UpdateAllShaderCBData(ID3D11DeviceContext* InDeviceContext, void** InConstBufferData, uint8 InConstBufferCount)
-{
-	for (int i = WVP_TRANSFOMRM_IDX + 1; i < InConstBufferCount; i++) {
-		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, InConstBufferData[i], 0, 0);
-	}
-}
 
 
 void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* DeviceContext)
@@ -369,33 +340,13 @@ void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* DeviceContext)
 	DeviceContext->VSSetShader(VertexShader, nullptr, 0);
 	DeviceContext->PSSetShader(PixelShader, nullptr, 0);
 
-	for (int i = 0; i < ShaderReflection.VSConstBufferNum; i++) {
-		DeviceContext->VSSetConstantBuffers(ShaderReflection.VSCBReflectionInfo[i].CBSlotIdx, 1,
-			&VSConstantBuffers[i]);
-	}
-	for (int i = 0; i < ShaderReflection.PSConstBufferNum; i++) {
-		DeviceContext->PSSetConstantBuffers(ShaderReflection.PSCBReflectionInfo[i].CBSlotIdx, 1,
-			&PSConstantBuffers[i]);
-
-	}
-
-	//DeviceContext->VSSetConstantBuffers(0, ShaderReflection.VSConstBufferNum, VSConstantBuffers);
-	//DeviceContext->PSSetConstantBuffers(0, ShaderReflection.PSConstBufferNum, PSConstantBuffers);
-
 }
 
-
-
-SSShaderAsset::~SSShaderAsset()
+void SSShaderAsset::Release()
 {
 	switch (CurStage) {
 
 	case ShaderAssetInstanceStage::Instantiated:
-		//Release Constant Buffers
-		for (int i = 0; i < ShaderReflection.EntireConstBufferNum; i++) {
-			ConstantBuffers[i]->Release();
-		}
-
 
 		InputLayout->Release();
 		VertexShader->Release();
@@ -411,4 +362,3 @@ SSShaderAsset::~SSShaderAsset()
 		break;
 	}
 }
-

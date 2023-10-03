@@ -1,5 +1,5 @@
 #include "SSGeometryAssetManager.h"
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 
 void SSGeometryAssetManager::Init()
 {

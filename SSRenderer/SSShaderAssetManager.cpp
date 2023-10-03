@@ -1,6 +1,6 @@
 #include "SSShaderAssetManager.h"
 #include "ExternalUtils/ExternalUtils.h"
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 
 
 void SSShaderAssetManager::Init()
@@ -47,7 +47,7 @@ HRESULT SSShaderAssetManager::InstantiateAllShader(ID3D11Device* InDevice)
 		HRESULT hr = ShaderList[i]->InstantiateShader(InDevice);
 
 		if (FAILED(hr)) {
-			WSS_LOG(L"Warning: (SSShaderAssetManager) Instantiate Failed.\n");
+			SS_CLASS_WARNING_LOG("Instantiate Failed.");
 			return hr;
 		}
 	}
@@ -56,6 +56,7 @@ HRESULT SSShaderAssetManager::InstantiateAllShader(ID3D11Device* InDevice)
 
 void SSShaderAssetManager::ReleaseShader(uint8 ShaderName)
 {
+	ShaderList[ShaderName]->Release();
 	delete ShaderList[ShaderName];
 	ShaderPoolCount--;
 	for (uint8 i = ShaderName; i < ShaderPoolCount; i++) {
@@ -66,6 +67,7 @@ void SSShaderAssetManager::ReleaseShader(uint8 ShaderName)
 void SSShaderAssetManager::ReleaseAllShader()
 {
 	for (uint8 i = 0; i < ShaderPoolCount; i++) {
+		ShaderList[i]->Release();
 		delete ShaderList[i];
 	}
 

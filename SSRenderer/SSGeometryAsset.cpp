@@ -1,6 +1,6 @@
 #include "SSGeometryAsset.h"
 
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 
 #include <memory.h>
 
@@ -85,8 +85,6 @@ HRESULT SSGeometryAsset::SendVertexDataOnGPU(ID3D11Device* InDevice)
     InitData.pSysMem = VertexData;
     HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &VertexBuffer);
 
-    InDevice->SetPrivateData(WKPDID_D3DDebugObjectName, 6,"Vertex");
-
     if (FAILED(hr)) {
         SS_LOG("Error(SSGeometryAsset::SendVertexDataOnGPU): Vertex buffer creation failed.");
         return hr;
@@ -167,8 +165,6 @@ HRESULT SSGeometryAsset::SendIndexDataOnGPU(ID3D11Device* InDevice)
     D3D11_SUBRESOURCE_DATA InitData = {}; // 버퍼의 초기 데이터는 여기 써 넣어준다.
     InitData.pSysMem = IndexData;
     HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &IndexBuffer);
-
-    InDevice->SetPrivateData(WKPDID_D3DDebugObjectName, 5, "Index");
 
 
     if (FAILED(hr)) {

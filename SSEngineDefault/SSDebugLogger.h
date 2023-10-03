@@ -19,6 +19,13 @@
 #define __CLASS__ (typeid(*this).name())
 
 #define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR, __CLASS__, __func__, __LINE__, __VA_ARGS__)
+#define SS_CLASS_WARNING_LOG(STR, ...) printf_s("Warning(%s:%s, Line: %d): "##STR, __CLASS__, __func__, __LINE__, __VA_ARGS__)
+
+#include <crtdbg.h>
+#define _CRTDBG_MAP_ALLOC
+#define new new (_NORMAL_BLOCK , __FILE__ , __LINE__)
+#define malloc(s) _malloc_dbg(s,_NORMAL_BLOCK,__FILE__,__LINE__)
+#include <stdlib.h>
 
 
 
@@ -26,7 +33,7 @@
 #else
 #define SS_LOG(n) 
 #define WSS_LOG(n)
-
-
+#define __CLASS__ 
+#define SS_CLASS_ERR_LOG(n)
 
 #endif

@@ -1,7 +1,6 @@
 ﻿// FBXRenderer.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
-#include <crtdbg.h>
 
 #include "framework.h"
 #include "FBXRenderer.h"
@@ -9,6 +8,9 @@
 
 #include "SSRenderer/SSRenderer.h"
 #include "SSRenderer/SSShaderAssetManager.h"
+
+#include "SSDebugLogger.h"
+
 
 #define MAX_LOADSTRING 100
 
@@ -32,6 +34,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
+
+#ifdef _DEBUG
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
+#endif
 
 	// HINSTANCE: 운영체제에서 실행되는 프로그램들을 구별하기 위한 ID값
 	// PID와는 다른데, PID의 경우 윈도우에서 모든 프로세스를 개별적으로 구분하기 위해 사용되지만
@@ -90,7 +97,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 
 	CheckRemainingObjects();
-	_CrtDumpMemoryLeaks();
+//	_CrtDumpMemoryLeaks();
+//	_CrtCheckMemory();
 
 	return (int)msg.wParam;
 }

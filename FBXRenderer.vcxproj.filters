@@ -30,7 +30,7 @@
     <ClInclude Include="FBXRenderer.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSEngineDefault\SSDebug.h">
+    <ClInclude Include="SSEngineDefault\SSDebugLogger.h">
       <Filter>헤더 파일\SSBasics</Filter>
     </ClInclude>
     <ClInclude Include="SSRenderer\SSRenderer.h">
@@ -48,7 +48,7 @@
     <ClInclude Include="ExternalUtils\DDSTextureLoader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSMaterial.h">
+    <ClInclude Include="SSRenderer\SSMaterialAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SSRenderer\SSTextureManager.h">
@@ -81,6 +81,9 @@
     <ClInclude Include="SSRenderer\SSModelAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSRenderer\SSModelAssetManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">
@@ -89,7 +92,7 @@
     <ClCompile Include="SSEngineDefault\SSNativeTypes.h">
       <Filter>헤더 파일\SSBasics</Filter>
     </ClCompile>
-    <ClCompile Include="SSEngineDefault\SSDebug.cpp">
+    <ClCompile Include="SSEngineDefault\SSDebugLogger.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\SSRenderer.cpp">
@@ -107,7 +110,7 @@
     <ClCompile Include="ExternalUtils\DDSTextureLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSMaterial.cpp">
+    <ClCompile Include="SSRenderer\SSMaterialAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\SSTextureManager.cpp">
@@ -135,6 +138,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\SSModelAsset.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\SSModelAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

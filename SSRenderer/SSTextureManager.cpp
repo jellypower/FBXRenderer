@@ -1,6 +1,6 @@
 #include "SSTextureManager.h"
 
-#include "SSDebug.h"
+#include "SSDebugLogger.h"
 #include "ExternalUtils/DDSTextureLoader.h"
 
 using namespace DirectX;
