@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <d3d11.h>
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSShaderAsset.h"
 
@@ -30,7 +30,9 @@ public:
 	
 	HRESULT InstantiateShader(ID3D11Device* InDevice);
 
-	__forceinline void UpdateWVPMatrix(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
+	__forceinline void UpdateTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
+
+	__forceinline void UpdateCameraSetting(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
 
 	__forceinline MaterialAssetInstanceStage GetMaterialStage() const { return MaterialStage; }
 
@@ -64,7 +66,12 @@ private:
 	// TODO: MeshRenderer 만들기 (버텍스와 쉐이더를 가지고 실제 메쉬를 그리는 놈)
 };
 
-inline void SSMaterialAsset::UpdateWVPMatrix(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
+inline void SSMaterialAsset::UpdateTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
 {
-	InDeviceContext->UpdateSubresource(ConstantBuffers[WVP_TRANSFOMRM_IDX], 0, nullptr, &InMatrix, 0, 0);
+	InDeviceContext->UpdateSubresource(ConstantBuffers[W_TRANSFOMRM_IDX], 0, nullptr, &InMatrix, 0, 0);
+}
+
+inline void SSMaterialAsset::UpdateCameraSetting(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
+{
+	InDeviceContext->UpdateSubresource(ConstantBuffers[VP_TRANSFORM_IDX], 0 ,nullptr, &InMatrix, 0 , 0);
 }

@@ -4,12 +4,13 @@
 
 #include "framework.h"
 #include "FBXRenderer.h"
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSRenderer/SSRenderer.h"
 #include "SSRenderer/SSShaderAssetManager.h"
 
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
+#include "SSEngineDefault/SSInput.h"
 
 
 #define MAX_LOADSTRING 100
@@ -22,17 +23,14 @@ WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
 
-HRESULT                InitWindow(HINSTANCE, int, RECT);
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+HRESULT					InitWindow(HINSTANCE, int, RECT);
+LRESULT CALLBACK		WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK		About(HWND, UINT, WPARAM, LPARAM);
 void CheckRemainingObjects();
 // HINSTANCE는 해당 어플리케이션에 해당하는 값. ("프로그램"에 대응, 똑같은 프로그램을 두 개 띄워도 HINSTANCE임)
 // HWND는 해당 어플리케이션의 하나의 "윈도우"에 해당하는 값 ("윈도우"에 대흥, 똑같은 프로그램을 두 개 띄우면 두 HWND는 다름)
 
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPWSTR    lpCmdLine,
-	_In_ int       nCmdShow)
+int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 {
 
 #ifdef _DEBUG
@@ -40,33 +38,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 #endif
 
-	// HINSTANCE: 운영체제에서 실행되는 프로그램들을 구별하기 위한 ID값
-	// PID와는 다른데, PID의 경우 윈도우에서 모든 프로세스를 개별적으로 구분하기 위해 사용되지만
-	// HINSTANCE의 경우 해당 프로그램이 중복해서 가지는 실행 명령 코드나 리소스를 공유하기 위한 것이다.
-
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	// 16비트 윈도우 시절 hPrevInstance가 NULL이 아니면 이것은 이미 실행 중인 프로그램의 복사물에 대한
-	// 인스턴스 핸들로 사용될 수 있었다. Win32부터는 항상 null이다. 지금은 호환성만을 위해 존재함
-	UNREFERENCED_PARAMETER(lpCmdLine);
-	// 명령행으로 입력된 프로그램 인수이다. 도스의 argv인수에 해당한다.
-
-	// TODO: 여기에 코드를 입력합니다.
+	SSInput::Get();
+	SSFrameInfo::Get();
 
 	// 전역 문자열을 초기화합니다.
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_FBXRENDERER, szWindowClass, MAX_LOADSTRING);
 
 	// 애플리케이션 초기화를 수행합니다:
-	if (FAILED( InitWindow(hInstance, nCmdShow, {0,0,800,600}) ))
+	if (FAILED(InitWindow(hInstance, nCmdShow, { 0,0,800,600 })))
 	{
 		__debugbreak();
 		return FALSE;
 	}
 	g_hInst = hInstance;
 
-	
+
 	HRESULT hr = g_Renderer.Init(g_hInst, g_hWnd);
-	if ( FAILED(hr) ) {
+	if (FAILED(hr)) {
 		__debugbreak();
 		g_Renderer.CleanUp();
 		return FALSE;
@@ -80,26 +69,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	while (WM_QUIT != msg.message)
 	{
+		SSFrameInfo::Get()->ProcessPerFrameBeginEventInternal();
+
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else
-		{
-			g_Renderer.PerFrameTemp();
-		}
 
+		g_Renderer.PerFrameTemp();
+
+
+		SSInput::Get()->ProcessInputReset();
 	}
 
-	
+
 	g_Renderer.CleanUp();
 
+	SSFrameInfo::Release();
+	SSInput::Release();
 
+#ifdef _DEBUG
 	CheckRemainingObjects();
-//	_CrtDumpMemoryLeaks();
-//	_CrtCheckMemory();
-
+	//	_CrtDumpMemoryLeaks();
+	//	_CrtCheckMemory();
+#endif
 	return (int)msg.wParam;
 }
 
@@ -124,7 +118,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, RECT WindowSize)
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
 	// RegisterClass를 통해 화면에 어떤 객체를 올릴지 클래스를 "등록"
-	if ( !RegisterClassExW(&wcex) ) {
+	if (!RegisterClassExW(&wcex)) {
 		__debugbreak();
 		return E_FAIL;
 	}
@@ -138,7 +132,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, RECT WindowSize)
 	int32 Height = WindowSize.bottom - WindowSize.top;
 
 	// 위에서 RegisterClass를 통해 등록한 클래스를 "생성"해서 윈도우 창 생성
-	HWND hWnd = CreateWindow(szWindowClass, szTitle, 
+	HWND hWnd = CreateWindow(szWindowClass, szTitle,
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
 		CW_USEDEFAULT, CW_USEDEFAULT, Width, Height
 		, nullptr, nullptr, hInstance, nullptr);
@@ -152,11 +146,12 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, RECT WindowSize)
 
 	ShowWindow(hWnd, nCmdShow);
 	// nCmdShow: 윈도우 및 컨트롤의 표시/숨김 여부 설정과 최대화, 최소화 여부 설정
-	
-	
+
+
 	UpdateWindow(hWnd);
 
 	g_hWnd = hWnd;
+
 
 	return S_OK;
 }
@@ -202,6 +197,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_SIZE:
+		SSFrameInfo::Get()->ProcessWindowResizeEventInternal(LOWORD(lParam), HIWORD(lParam));
+		break;
+
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	
+		SSInput::Get()->ProcessInputEventForWindowsInternal(hWnd, message, wParam, lParam);
+		break;
+
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -229,6 +241,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
+#ifdef _DEBUG
 void CheckRemainingObjects() {
 	HMODULE dxgidebugdll = GetModuleHandleW(L"dxgidebug.dll");
 	decltype(&DXGIGetDebugInterface) GetDebugInterface = reinterpret_cast<decltype(&DXGIGetDebugInterface)>(GetProcAddress(dxgidebugdll, "DXGIGetDebugInterface"));
@@ -243,3 +256,4 @@ void CheckRemainingObjects() {
 
 	debug->Release();
 }
+#endif

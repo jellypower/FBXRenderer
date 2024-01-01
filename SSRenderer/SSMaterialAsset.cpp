@@ -1,6 +1,6 @@
 #include "SSMaterialAsset.h"
 
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 #include "SSTextureManager.h"
 
 #include <directxmath.h>
@@ -19,8 +19,8 @@ HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice,
 	ShaderReflectionMetadata = Shader->GetShaderReflectionPointer();
 
 	
-	TextureList = new ID3D11ShaderResourceView * [ShaderReflectionMetadata->TextureCount];
-	SampleStateList = new ID3D11SamplerState * [ShaderReflectionMetadata->SamplerCount];
+	TextureList = DBG_NEW ID3D11ShaderResourceView * [ShaderReflectionMetadata->TextureCount];
+	SampleStateList = DBG_NEW ID3D11SamplerState * [ShaderReflectionMetadata->SamplerCount];
 
 
 
@@ -32,7 +32,7 @@ HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice,
 	}
 
 
-
+	/*
 	// HACK: start
 	TextureList[0] = InTextureManager->GetTextureByIndex(0);
 
@@ -52,7 +52,7 @@ HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice,
 	}
 
 	// HACK: end
-
+	*/
 
 
 	MaterialStage = MaterialAssetInstanceStage::Initialized;
@@ -64,7 +64,9 @@ void SSMaterialAsset::Release()
 {
 
 	for (int i = 0; i < ShaderReflectionMetadata->EntireConstBufferNum; i++) {
-		ConstantBuffers[i]->Release();
+		if(ConstantBuffers[i] != nullptr)
+			ConstantBuffers[i]->Release();
+		ConstantBuffers[i] = nullptr;
 	}
 
 	for (int i = 0; i < ShaderReflectionMetadata->EntireConstBufferNum; i++) {
@@ -132,7 +134,10 @@ HRESULT SSMaterialAsset::InstantiateShader(ID3D11Device* InDevice)
 	uint8 CurVSCBIdx = 0;
 	uint8 CurPSCBIdx = 0;
 
-	for (uint8 i = 0; i < ShaderReflectionMetadata->EntireConstBufferNum; i++) {
+	for (uint8 i = 0; i < ShaderReflectionMetadata->ConstBufferSlotMax + 1; i++) {
+		
+		if (ShaderReflectionMetadata->EntireCBReflectionInfo[i].CBSize == INVALID_BUFFER_SIZE) continue;
+
 		D3D11_BUFFER_DESC bd = {};
 		bd.Usage = D3D11_USAGE_DEFAULT; // TODO: 나중에 dynamic으로 바꿔보기
 		bd.ByteWidth = ShaderReflectionMetadata->EntireCBReflectionInfo[i].CBSize;
@@ -165,7 +170,7 @@ HRESULT SSMaterialAsset::InstantiateShader(ID3D11Device* InDevice)
 
 void SSMaterialAsset::UpdateAllShaderCBData(ID3D11DeviceContext* InDeviceContext, void** InConstBufferData, uint8 InConstBufferCount)
 {
-	for (int i = WVP_TRANSFOMRM_IDX + 1; i < InConstBufferCount; i++) {
+	for (int i = VP_TRANSFORM_IDX + 1; i < InConstBufferCount; i++) {
 		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, InConstBufferData[i], 0, 0);
 	}
 }

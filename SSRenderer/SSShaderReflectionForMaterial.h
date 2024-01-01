@@ -8,13 +8,14 @@
 #define LAYOUT_NUM_MAX D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT 
 #define CONSTANT_BUFFER_COUNT_MAX D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT
 
-#define WVP_TRANSFOMRM_IDX 0
+#define W_TRANSFOMRM_IDX 0
+#define VP_TRANSFORM_IDX 1
 
 #define INVALID_SLOT_IDX -1
 #define INVALID_BUFFER_SIZE 0
 #define CONSTANT_BUFFER_NAME_LEN_MAX 59
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 // Shader Constant Buffer Element's reflection data
 struct SSShaderCBReflectionElement { 
@@ -39,6 +40,7 @@ typedef struct _SSShaderReflectionForMaterial {
 
 	SSShaderCBReflectionElement EntireCBReflectionInfo[CONSTANT_BUFFER_COUNT_MAX];
 	uint8 EntireConstBufferNum = 0;
+	uint8 ConstBufferSlotMax = 0;
 
 	uint8 TextureCount = 0;
 	uint8 SamplerCount = 0;

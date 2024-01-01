@@ -4,7 +4,7 @@
 #include "SSMaterialAsset.h"
 #include "SSGeometryAsset.h"
 
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 
 
 void SSModelAsset::InitTemp(SSMaterialAsset* InMaterial, SSGeometryAsset* InGeometry)
@@ -38,3 +38,11 @@ void SSModelAsset::BindModel(ID3D11DeviceContext* InDeviceContext)
 		return;
 	}
 }
+
+void SSModelAsset::Release()
+{
+	Material = nullptr;
+	Geometry = nullptr;
+	InstanceStage = ModelAssetInstanceStage::JustCreated;
+}
+

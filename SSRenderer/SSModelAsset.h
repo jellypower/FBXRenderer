@@ -20,6 +20,10 @@ public:
 	
 	void BindModel(ID3D11DeviceContext* InDeviceContext);
 
+	void Release();
+
+	SSGeometryAsset* GetGeometryAsset() { return Geometry; }
+
 
 private:
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 #include "SSStaticMath.h"
 
 #include <d3d11.h>
@@ -10,39 +10,36 @@
 class SSCamera
 {
 
-public:
-
-	SSCamera();
-
-	void UpdateResolutionWithClientRect(ID3D11Device* InDevice, HWND InHwnd);
-	Transform& GetTransform() { return transform;  }
-
-public:
-
-	__forceinline XMMATRIX GetViewMatrix();
-	__forceinline XMMATRIX GetProjectionMatrix();
-	__forceinline XMMATRIX GetViewProjMatrix();
-
-	__forceinline void SetFOVWithRadians(float InRadians);
-	__forceinline void SetFOVWithDegrees(float InDegrees);
-	__forceinline float GetRadianFOV();
-	__forceinline float GetDegFOV();
-
-	__forceinline void SetNearZ(float InValue);
-	__forceinline void SetFarZ(float InValue);
-	__forceinline void SetNearFarZ(float InNearZ, float InFarZ);
-
-	__forceinline float GetNearZ();
-	__forceinline float GetFarZ();
-
 private:
 	Transform transform;
 	RECT ScreenRect = { 0 };
-	
+
 	float FOVRadY = 0;
 	float NearZ = 0;
 	float FarZ = 0;
 
+public:
+
+	SSCamera();
+	void UpdateResolutionWithClientRect(ID3D11Device* InDevice, HWND InHwnd);
+	Transform& GetTransform() { return transform;  }
+
+
+	FORCEINLINE XMMATRIX GetViewMatrix();
+	FORCEINLINE XMMATRIX GetProjectionMatrix();
+	FORCEINLINE XMMATRIX GetViewProjMatrix();
+
+	FORCEINLINE void SetFOVWithRadians(float InRadians);
+	FORCEINLINE void SetFOVWithDegrees(float InDegrees);
+	FORCEINLINE float GetRadianFOV();
+	FORCEINLINE float GetDegFOV();
+
+	FORCEINLINE void SetNearZ(float InValue);
+	FORCEINLINE void SetFarZ(float InValue);
+	FORCEINLINE void SetNearFarZ(float InNearZ, float InFarZ);
+
+	FORCEINLINE float GetNearZ();
+	FORCEINLINE float GetFarZ();
 };
 
 
@@ -50,16 +47,11 @@ private:
 
 XMMATRIX SSCamera::GetViewMatrix()
 {
-	XMVECTOR Eye = transform.Position.SimdVec;
-	XMVECTOR At = 
-		XMVector4Transform(Vector4f::Forward.SimdVec, 
-			XMMatrixRotationRollPitchYawFromVector(transform.Rotation.SimdVec));
-	XMVECTOR Up = 
-		XMVector4Transform(Vector4f::Up.SimdVec,
-			XMMatrixRotationRollPitchYawFromVector(transform.Rotation.SimdVec));
+	XMVECTOR EyePos = transform.Position.SimdVec;
+	XMVECTOR Direction = transform.GetForward().SimdVec;
+	XMVECTOR Up = Vector4f::Up.SimdVec;
 	
-	
-	return XMMatrixLookAtLH(Eye, At, Up);
+	return XMMatrixLookToLH(EyePos, Direction, transform.GetUp().SimdVec);
 }
 
 XMMATRIX SSCamera::GetProjectionMatrix()
@@ -67,7 +59,7 @@ XMMATRIX SSCamera::GetProjectionMatrix()
 	UINT width = ScreenRect.right - ScreenRect.left;
 	UINT height = ScreenRect.bottom - ScreenRect.top;
 
-	return XMMatrixPerspectiveFovLH(FOVRadY, width / (FLOAT)height, 0.01f, 100.0f);;
+	return XMMatrixPerspectiveFovLH(FOVRadY, width / (FLOAT)height, NearZ, FarZ);
 }
 
 inline XMMATRIX SSCamera::GetViewProjMatrix()

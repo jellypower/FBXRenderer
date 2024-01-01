@@ -3,7 +3,10 @@
 
 #include "SSCamera.h"
 #include "../ExternalUtils/ExternalUtils.h"
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
+#include "SSEngineDefault/SSInput.h"
+#include "SSEngineDefault/SSFrameInfo.h"
+
 
 
 
@@ -43,13 +46,13 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		DriverType = driverTypes[driverTypeIndex];
 		hr = D3D11CreateDevice(nullptr, DriverType, nullptr, createDeviceFlags
 			, featureLevels, numFeatureLevels,
-			D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &DeviceContext);
+			D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &_deviceContext);
 
 		if (hr == E_INVALIDARG) {
 			// DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
 			hr = D3D11CreateDevice(nullptr, DriverType, nullptr
 				, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-				D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &DeviceContext);
+				D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &_deviceContext);
 		}
 
 		if (SUCCEEDED(hr)) {
@@ -88,7 +91,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		// DirectX 11.1 or later
 		hr = D3DDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)&D3DDevice1);
 		if (SUCCEEDED(hr)) {
-			(void)DeviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&DeviceContext1);
+			(void)_deviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&DeviceContext1);
 		}
 
 		DXGI_SWAP_CHAIN_DESC1 sd = {};
@@ -177,7 +180,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	if (FAILED(hr))
 		return hr;
 
-	DeviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
+	_deviceContext->OMSetRenderTargets(1, &RenderTargetView, DepthStencilView);
 
 
 	// Setup the viewport
@@ -188,20 +191,20 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	vp.MaxDepth = 1.0f;
 	vp.TopLeftX = 0;
 	vp.TopLeftY = 0;
-	DeviceContext->RSSetViewports(1, &vp);
+	_deviceContext->RSSetViewports(1, &vp);
 
 	// 셰이더 초기화 코드완료!
 	// 메테리얼 초기화, 버텍스버퍼 초기화 함수 만들기
 
 	hr = InitShaderManager();
 	if (FAILED(hr)) {
-		SS_LOG("Error(SSRenderer::InitShaderManager): Shader Manager Init failed.\n");
+		SS_CLASS_ERR_LOG("Shader Manager init failed.");
 		return hr;
 	}
 	
 	hr = TextureManager.TempLoadTexture(D3DDevice);
 	if (FAILED(hr)) {
-		SS_LOG("Error(SSRenderer::TempLoadTexture): Texture loader Init failed.\n");
+		SS_CLASS_ERR_LOG("Texture Loader init failed.");
 		return hr;
 	}
 	
@@ -217,6 +220,22 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		return hr;
 	}
 
+	hr = ImportFBXFileToAssetPool();
+	if (FAILED(hr)) {
+		SS_CLASS_ERR_LOG();
+		return hr;
+	}
+
+	hr = GeometryManager.SendAllGeometryAssetToGPUTemp(D3DDevice);
+	if (FAILED(hr)) {
+		SS_LOG("Error(SSRenderer): Init Geometry manager failed.\n");
+		MaterialManager.ReleaseAllMaterialsTemp();
+		return hr;
+	}
+
+	ModelManager.Init(&MaterialManager, &GeometryManager);
+	ModelManager.CreateNewAssetTemp(
+		MaterialManager.GetMaterialWithIdx(0), GeometryManager.GetGeometryWithIdx(0));
 	
 
 	InitCameraTemp();
@@ -236,19 +255,20 @@ HRESULT SSRenderer::InitShaderManager()
 	ShaderManager.Init();
 	HRESULT hr = ShaderManager.CompileAllShader();
 	if (FAILED(hr)) {
-		SS_LOG("Error(SSRenderer): Shader compile failed.\n");
+		SS_CLASS_ERR_LOG("Shader compile Failed.");
 		ShaderManager.ReleaseAllShader();
 		return hr;
 	}
 
 	ShaderManager.InstantiateAllShader(D3DDevice);
 	if (FAILED(hr)) {
+		SS_CLASS_ERR_LOG("Shader Instantiate Failed.");
 		SS_LOG("Error(SSRenderer): Shader instantiate failed.\n");
 		ShaderManager.ReleaseAllShader();
 		return hr;
 	}
 
-
+		
 	return S_OK;
 }
 
@@ -265,10 +285,10 @@ HRESULT SSRenderer::InitMaterialManager()
 	// HACK: Temp implementation
 	{ 
 		SSMaterialAsset* mat = MaterialManager.GetMaterialWithIdx(0);
-		mat->UpdateWVPMatrix(DeviceContext, XMMatrixIdentity());
+		mat->UpdateTransform(_deviceContext, XMMatrixIdentity());
 
-		XMVECTOR ZeroVector = XMVectorZero();
-		mat->UpdateParameter(DeviceContext, 1, &ZeroVector, sizeof(XMVECTOR));
+//		XMVECTOR ZeroVector = XMVectorZero();
+//		mat->UpdateParameter(_deviceContext, 1, &ZeroVector, sizeof(XMVECTOR));
 	}
 
 	return hr;
@@ -276,39 +296,52 @@ HRESULT SSRenderer::InitMaterialManager()
 
 HRESULT SSRenderer::InitGeometryManager()
 {
-	GeometryManager.Init();
+	GeometryManager.Init(100);
 	HRESULT hr = S_OK;
 
-	GeometryManager.LoadAllGeometryAssetTemp();
-	hr = GeometryManager.SendAllGeometryAssetToGPUTemp(D3DDevice);
-	if (FAILED(hr)) {
-		SS_LOG("Error(SSRenderer): Init Geometry manager failed.\n");
-		MaterialManager.ReleaseAllMaterialsTemp();
-		return hr;
-	}
-
-	GeometryManager.ReleaseAllGeometryDataOnSystem();
 	return hr;
 }
 
-HRESULT SSRenderer::InitModelAssetManager()
+HRESULT SSRenderer::ImportFBXFileToAssetPool()
 {
-	return E_NOTIMPL;
+	HRESULT hr = S_OK;
+	FbxImporter.BindAssetPoolToImportAsset(&MaterialManager, &GeometryManager, &ModelManager);
+
+	hr = FbxImporter.LoadModelAssetFBXFromFile(
+		
+//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\a.fbx"
+//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
+//		"D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
+		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\Room.fbx"
+//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+	);
+	if (FAILED(hr)) {
+		SS_CLASS_ERR_LOG();
+		return hr;
+	}
+
+	FbxImporter.StoreCurrentFBXModelAssetToAssetManager();
+
+	return hr;
 }
+
 
 void SSRenderer::InitCameraTemp()
 {
-	RenderTarget = new SSCamera();
+	RenderTarget = DBG_NEW SSCamera();
 	RenderTarget->UpdateResolutionWithClientRect(D3DDevice, hWnd);
-	RenderTarget->GetTransform().Position = Vector4f(.0f, 3.0f, -12.0f, .0f);
+	RenderTarget->GetTransform().Position = Vector4f(.0f, 0.0f, -1000.0f, .0f);
+	RenderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - RenderTarget->GetTransform().Position);
 	RenderTarget->SetFOVWithRadians(XM_PIDIV4);
-	RenderTarget->SetNearFarZ(0.01f, 100.f);
+	RenderTarget->SetNearFarZ(0.01f, 10000.f);
 }
 
 
 void SSRenderer::CleanUp()
 {
+	FbxImporter.ClearAssetPoolToImportAsset();
 	
+	GeometryManager.ReleaseAllGeometryDataOnSystem();
 	GeometryManager.ReleaseAllGeometryDataOnGPU();
 	GeometryManager.Release();
 	
@@ -321,16 +354,21 @@ void SSRenderer::CleanUp()
 	ShaderManager.ReleaseAllShader();
 	ShaderManager.Release();
 
+	ModelManager.ReleaseAllModels();
+	ModelManager.Release();
+
+
+
 	// HACK:임시작업
 	{
 		delete RenderTarget;
 	}
 
-	if (DeviceContext) DeviceContext->ClearState();
+	if (_deviceContext) _deviceContext->ClearState();
 	if (D3DDevice) D3DDevice->Release();
 	if (D3DDevice1) D3DDevice1->Release();
 	if (DeviceContext1) DeviceContext1->Release();
-	if (DeviceContext) DeviceContext->Release();
+	if (_deviceContext) _deviceContext->Release();
 	if (SwapChain) SwapChain->Release();
 	if (SwapChain1) SwapChain1->Release();
 	if (RenderTargetView) RenderTargetView->Release();
@@ -342,48 +380,102 @@ void SSRenderer::CleanUp()
 
 void SSRenderer::PerFrameTemp()
 {
-	CalcDeltaTime();
-	DeviceContext->ClearRenderTargetView(RenderTargetView, Colors::MidnightBlue);
-	DeviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	SSGeometryAsset* Geometry = GeometryManager.GetGeometryWithIdx(0);
+	_deviceContext->ClearRenderTargetView(RenderTargetView, Colors::MidnightBlue);
+	_deviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	constexpr float CAM_XROT_MAX = 0.9;
+
+	// process mouse input
+	if (SSInput::GetMouse(EMouseCode::MOUSE_RIGHT))
+	{
+		constexpr float CAM_ROT_SPEED = 1000;
+		
+		_camYRotation += SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().X * CAM_ROT_SPEED;
+
+		if (_camXRotation > -XM_PIDIV2 * CAM_XROT_MAX && SSInput::GetMouseDelta().Y > 0)
+			_camXRotation -= SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
+
+		if (_camXRotation < XM_PIDIV2 * CAM_XROT_MAX && SSInput::GetMouseDelta().Y < 0)
+			_camXRotation -= SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
+		
+	}
+
+	// process keyborad input
+	{
+		constexpr float CAM_SPEED = 100;
+		constexpr float CAM_ROT_SPEED = 0.5;
+
+		if (SSInput::GetKey(EKeyCode::KEY_W))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetForward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+		
+		if (SSInput::GetKey(EKeyCode::KEY_S))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetBackward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+		
+		if (SSInput::GetKey(EKeyCode::KEY_A))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetLeft() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+		
+		if (SSInput::GetKey(EKeyCode::KEY_D))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetRight() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+
+		if (SSInput::GetKey(EKeyCode::KEY_E))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetUp() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+
+		if (SSInput::GetKey(EKeyCode::KEY_Q))
+			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetDown() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+
+		if (SSInput::GetKey(EKeyCode::KEY_RIGHT))
+			_camYRotation += SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+
+		if (SSInput::GetKey(EKeyCode::KEY_LEFT))
+			_camYRotation -= SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+
+		if (SSInput::GetKey(EKeyCode::KEY_UP) )
+		{
+			if(_camXRotation > -XM_PIDIV2 * CAM_XROT_MAX)
+				_camXRotation -= SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+		}
+			
+		if (SSInput::GetKey(EKeyCode::KEY_DOWN))
+		{
+			if(_camXRotation < XM_PIDIV2 * CAM_XROT_MAX)
+				_camXRotation += SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+		}
+	}
+	_camYRotation = fmodf(_camYRotation, XM_2PI);
+	RenderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
+
+
+	SSGeometryAsset* Geometry = GeometryManager.GetGeometryWithIdx(36);
 	Geometry->SetDrawTopology(GeometryDrawTopology::TRIANGLELIST);
-	Geometry->BindGeometry(DeviceContext);
+
+	SSMaterialAsset* Material = MaterialManager.GetMaterialWithIdx(0);
+
+	Geometry->BindGeometry(_deviceContext);
+	Material->BindMaterial(_deviceContext);
+
 	{
 		Vector4f MeshColor;
-		MeshColor.X = (sinf(ElapsedTime * 1.0f) + 1.0f) * 0.5f;
-		MeshColor.Y = (cosf(ElapsedTime * 3.0f) + 1.0f) * 0.5f;
-		MeshColor.Z = (sinf(ElapsedTime * 5.0f) + 1.0f) * 0.5f;
-		MaterialManager.GetMaterialWithIdx(0)->UpdateParameter(DeviceContext, 1, &MeshColor, sizeof(Vector4f));
+		MeshColor.X = (sinf(SSFrameInfo::GetElapsedTime() * 1.0f) + 1.0f) * 0.5f;
+		MeshColor.Y = (cosf(SSFrameInfo::GetElapsedTime() * 3.0f) + 1.0f) * 0.5f;
+		MeshColor.Z = (sinf(SSFrameInfo::GetElapsedTime() * 5.0f) + 1.0f) * 0.5f;
+		MeshColor = Vector4f(1,1,1,1);
 
-		Transform transform;
-		transform.Rotation.Y = ElapsedTime;
+//		Material->UpdateParameter(_deviceContext, 2, &MeshColor, sizeof(Vector4f));
 
 		XMMATRIX Temp = RenderTarget->GetViewProjMatrix();
 
-		MaterialManager.GetMaterialWithIdx(0)->UpdateWVPMatrix(DeviceContext,
-			XMMatrixTranspose(XMMatrixRotationY(ElapsedTime) * RenderTarget->GetViewProjMatrix()));
+//		Material->UpdateTransform(_deviceContext, XMMatrixTranspose(XMMatrixRotationY(SSFrameInfo::GetElapsedTime())));
+
+		Material->UpdateCameraSetting(_deviceContext, XMMatrixTranspose(RenderTarget->GetViewProjMatrix()));
 	}
 
-	SSMaterialAsset* Material = MaterialManager.GetMaterialWithIdx(0);
-	Material->BindMaterial(DeviceContext);
-	
 
-
-	uint32 IdxSize = Geometry->GetIndexDataCount();
-	DeviceContext->DrawIndexed(IdxSize, 0, 0);
-
+	uint32 IdxSize = Geometry->GetIndexDataNum();
+	_deviceContext->DrawIndexed(IdxSize, 0, 0);
 
 
 	SwapChain->Present(0,0);
 }
 
-void SSRenderer::CalcDeltaTime()
-{
-	CurTime = GetTickCount64();
-	if (StartTime == 0) {
-		StartTime = CurTime; 
-		SS_LOG("Reset Start time\n");
-	}
-	ElapsedTime = (CurTime - StartTime) / 1000.0f;
-}
+

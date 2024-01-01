@@ -8,10 +8,7 @@
 
 #include "ExternalUtils/ExternalUtils.h"
 
-#include "SSDebugLogger.h"
-// if new operator is defined by someone, #define new new (_NORMAL_BLOCK , __FILE__ , __LINE__) not works
-// And In the case of wrl.h, It defines new operator not to dynamically allocate the ComPtr objects
-// To solve this problem, We must define new operator after including wrl.h 
+#include "SSEngineDefault/SSDebugLogger.h"
 
 
 using namespace DirectX;
@@ -50,8 +47,8 @@ HRESULT SSShaderAsset::CompileShader()
 		ExternalUtils::CompileShaderFromFile(ShaderName, VSEntryPointName, "vs_4_0", &VSBlob);
 
 	if (FAILED(hr)) {
-		WSS_LOG(L"Warning: (Vertex Shader: %s)The FX file cannot be compiled.  Please run this executable \
-			from the directory that contains the FX file.\n", ShaderName);
+		WSS_CLASS_ERR_LOG("(Vertex Shader: %ls)The shader file cannot be compiled. Please run this executable"
+			" from the directory that contains the FX file.\n", ShaderName);
 		return hr;
 	}
 
@@ -59,7 +56,7 @@ HRESULT SSShaderAsset::CompileShader()
 		ExternalUtils::CompileShaderFromFile(ShaderName, PSEntryPointName, "ps_4_0", &PSBlob);
 
 	if (FAILED(hr)) {
-		WSS_LOG(L"Warning: (Pixel Shader: %s)The FX file cannot be compiled.  Please run this executable \
+		WSS_LOG(L"Warning: (Pixel Shader: %s)The shader file cannot be compiled.  Please run this executable \
 			from the directory that contains the FX file.\n", ShaderName);
 		VSBlob->Release();
 		VSBlob = nullptr;
@@ -122,7 +119,7 @@ HRESULT SSShaderAsset::CompileShader()
 
 			if (strcmp(paramDesc.SemanticName, SEMANTIC_POSITION) == 0) {
 				LayoutDescArray[i].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-				byteOffset += 12;
+				byteOffset += 16; /// TODO: 이거 계산하는 로직 다시 짜자
 			}
 			else if (paramDesc.Mask == 1) {
 				if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32)		LayoutDescArray[i].Format = DXGI_FORMAT_R32_UINT;
@@ -184,14 +181,14 @@ HRESULT SSShaderAsset::CompileShader()
 
 			if (ShaderReflection.EntireCBReflectionInfo[SlotIdx].CBSize == INVALID_BUFFER_SIZE) {
 
-				ShaderReflection.EntireCBReflectionInfo[ShaderReflection.EntireConstBufferNum]
+				ShaderReflection.EntireCBReflectionInfo[SlotIdx]
 					= ShaderReflection.VSCBReflectionInfo[i];
-				// TODO: 이거 ShaderReflection.EntireCBReflectionInfo[ShaderReflection.EntireConstBufferNum] 가 아니라
-				// ShaderReflection.EntireCBReflectionInfo[SlotIdx] 아닌가?
 
 				// TODO: 복사시에 어셈블리 체크하기
 
-
+				if (SlotIdx > ShaderReflection.ConstBufferSlotMax) {
+					ShaderReflection.ConstBufferSlotMax = SlotIdx;
+				}
 				ShaderReflection.EntireConstBufferNum++;
 
 			}
@@ -232,10 +229,12 @@ HRESULT SSShaderAsset::CompileShader()
 
 			if (ShaderReflection.EntireCBReflectionInfo[SlotIdx].CBSize == INVALID_BUFFER_SIZE) {
 
-				ShaderReflection.EntireCBReflectionInfo[ShaderReflection.EntireConstBufferNum]
+				ShaderReflection.EntireCBReflectionInfo[SlotIdx]
 					= ShaderReflection.PSCBReflectionInfo[i];
 
-
+				if (SlotIdx > ShaderReflection.ConstBufferSlotMax) {
+					ShaderReflection.ConstBufferSlotMax = SlotIdx;
+				}
 				ShaderReflection.EntireConstBufferNum++;
 
 			}
@@ -243,7 +242,7 @@ HRESULT SSShaderAsset::CompileShader()
 			SS_LOG("%s\n", bufferDesc.Name);
 		}
 
-
+		// TODO: 나중에 VS셰이더에 텍스쳐가 필요할 수도 있음
 		// 04. PS Texture and Sampler reflection
 		ShaderReflection.TextureCount = 0;
 		ShaderReflection.SamplerCount = 0;
@@ -328,7 +327,7 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 
 
 
-void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* DeviceContext)
+void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* _deviceContext)
 {
 	if (CurStage < ShaderAssetInstanceStage::Instantiated) {
 		WSS_LOG(L"Warning[%s]: Shader is not initalized completely. CurState: %d\n"
@@ -336,9 +335,9 @@ void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* DeviceContext)
 		return;
 	}
 
-	DeviceContext->IASetInputLayout(InputLayout);
-	DeviceContext->VSSetShader(VertexShader, nullptr, 0);
-	DeviceContext->PSSetShader(PixelShader, nullptr, 0);
+	_deviceContext->IASetInputLayout(InputLayout);
+	_deviceContext->VSSetShader(VertexShader, nullptr, 0);
+	_deviceContext->PSSetShader(PixelShader, nullptr, 0);
 
 }
 

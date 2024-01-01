@@ -1,8 +1,10 @@
 
 #include "SSFBXImporter.h"
-#include "SSDebugLogger.h"
-#include "SSRenderer/SSShaderAssetManager.h"
+#include "SSEngineDefault/SSDebugLogger.h"
+#include "SSRenderer/SSMaterialAssetManager.h"
 #include "SSRenderer/SSGeometryAssetManager.h"
+
+
 
 
 SSFBXImporter::SSFBXImporter()
@@ -14,7 +16,7 @@ SSFBXImporter::SSFBXImporter()
 	IOSettings->SetBoolProp(IMP_FBX_MATERIAL, true); // import 관련 설정
 	FBXManagerInst->SetIOSettings(IOSettings);
 
-	FBXImporterInst = ::FbxImporter::Create(FBXManagerInst, "");
+	FBXImporterInst = fbxsdk::FbxImporter::Create(FBXManagerInst, "");
 
 }
 
@@ -29,18 +31,81 @@ HRESULT SSFBXImporter::LoadModelAssetFBXFromFile(const char* FileName)
 {
 
 	if (!FBXImporterInst->Initialize(FileName, -1, FBXManagerInst->GetIOSettings())) {
-		SS_CLASS_WARNING_LOG("Call to FbxImporter::Initialize() failed.\n");
-		SS_CLASS_WARNING_LOG("\t%s", FBXImporterInst->GetStatus().GetErrorString());
+		SS_CLASS_WARNING_LOG("%s", FBXImporterInst->GetStatus().GetErrorString());
 		return E_FAIL;
 	}
 
 	CurrentScene = FbxScene::Create(FBXManagerInst, FileName);
 	FBXImporterInst->Import(CurrentScene);
 
+	return S_OK;
+
 }
 
-void SSFBXImporter::StoreCurrentModelAssetToAssetManager(SSShaderAssetManager* InShaderAssetManager, SSGeometryAssetManager* InGeometryAssetManager)
+void SSFBXImporter::StoreCurrentFBXModelAssetToAssetManager()
 {
+	if (BoundMaterialManager == nullptr || BoundGeometryManager == nullptr || BoundModelManager == nullptr) {
+		SS_CLASS_WARNING_LOG("Manager not bound");
+		return;
+	}
+
+	TraverseNodes();
+}
+
+void SSFBXImporter::BindAssetPoolToImportAsset(SSMaterialAssetManager* InMaterialManager, SSGeometryAssetManager* InGeometryManager, SSModelAssetManager* InModelManager)
+{
+	BoundMaterialManager = InMaterialManager;
+	BoundGeometryManager = InGeometryManager;
+	BoundModelManager = InModelManager;
+}
+
+void SSFBXImporter::ClearAssetPoolToImportAsset()
+{
+	BoundMaterialManager = nullptr;
+	BoundGeometryManager = nullptr;
+	BoundModelManager = nullptr;
+}
+void SSFBXImporter::TraverseNodes()
+{
+	if (CurrentScene == nullptr) {
+		SS_CLASS_WARNING_LOG("No scene to load");
+		return;
+	}
+
+	FbxNode* rootNode = CurrentScene->GetRootNode();
+
+	TraverseNodesRecursion(rootNode);
+
+}
+
+void SSFBXImporter::TraverseNodesRecursion(FbxNode* node)
+{
+	if (node->GetNodeAttribute() != nullptr) {
+		switch (node->GetNodeAttribute()->GetAttributeType())
+		{	
+		case FbxNodeAttribute::eMesh:
+			fbxsdk::FbxMesh* Mesh = node->GetMesh();
+
+			StoreModelToManager(Mesh);
+			
+			SS_LOG("\t%d\n", Mesh->GetLayerCount());
+		
+		}
+	}
+
+	for (int i = 0; i < node->GetChildCount(); i++) {
+		TraverseNodesRecursion(node->GetChild(i));
+	}
+}
+
+void SSFBXImporter::StoreModelToManager(fbxsdk::FbxMesh* InFBXMesh)
+{
+	if (BoundGeometryManager == nullptr) {
+		SS_CLASS_WARNING_LOG("No Bound Geometry Manager");
+		return;
+	}
+
+	BoundGeometryManager->InstantiateNewGeometry(InFBXMesh);
 	
 }
 

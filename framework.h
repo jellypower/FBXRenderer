@@ -13,3 +13,9 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+
+#include "SSEngineDefault/SSNativeTypes.h"
+#include "SSEngineDefault/SSVector.h" 
+
+#include "SSEngineDefault/SSDebugLogger.h"
+#include "SSEngineDefault/SSFrameInfo.h"

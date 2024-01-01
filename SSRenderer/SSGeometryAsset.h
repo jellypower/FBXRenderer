@@ -1,67 +1,72 @@
 #pragma once
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 #include <d3d11.h>
 #include <Windows.h>
+#include <fbxsdk.h>
 
-enum class GeometryDrawMethology {
-	DRAW_VERTEX = 0,
-	DRAW_INDEX = 1
+
+
+enum class GeometryAssetInstanceStage {
+	JustCreated = 0,
+	Initialized = 1,
+	Instantiated,
 };
+
+
 
 enum class GeometryDrawTopology {
 	NONE = 0,
 	TRIANGLELIST = 1
 };
 
+
 class SSGeometryAsset
 {
-	// TODO: 셰이더에 추가하고 나서 여기에도
-	// TODO:  Layout Info 추가 또는 Layout Info 규격화하기 (둘 다 할수도 있고)
+private:
+	GeometryDrawTopology DrawTopologyType = GeometryDrawTopology::NONE;
+
+	void* VertexData = nullptr;
+	uint32 VertexDataSize = 0; // == EachVertexDataSize * VertexDataNum
+	uint32 EachVertexDataSize = 0;
+	uint32 VertexDataNum = 0;
+	ID3D11Buffer* VertexBuffer = nullptr;
+
+
+	void* IndexData = nullptr;
+	uint32 IndexDataSize = 0; // == EachIndexSize * IndexDataNum
+	uint32 EachIndexDataSize = 0;
+	uint32 IndexDataNum = 0;
+	ID3D11Buffer* IndexBuffer = nullptr;
+
 
 public:
-	void InitVertexDataOnSystem(/** TODO: from file or from other geometry*/);
+
 	void ReleaseVertexDataOnSystem();
-	bool IsVertexDataOnSystem() { return VertexData != nullptr; }
+	bool DoesExistVertexDataOnSystem() { return VertexData != nullptr; }
 
 	HRESULT SendVertexDataOnGPU(ID3D11Device* InDevice);
 	void ReleaseVertexDataOnGPU();
-	bool IsVertexDataOnGPU() { return VertexBuffer != nullptr; }
 
-	void LoadIndexDataOnSystem();
+	// HACK:
+	void LoadIndexDataOnSystemTemp();
+
 	void ReleaseIndexDataOnSystem();
-	bool IsIndexDataOnSystem() { return IndexData != nullptr; }
+	bool DoesExistIndexDataOnSystem() { return IndexData != nullptr; }
 
 	HRESULT SendIndexDataOnGPU(ID3D11Device* InDevice);
 	void ReleaseIndexDataOnGPU();
-	bool IsIndexDataOnGPU() { return IndexBuffer != nullptr; }
+
+	HRESULT InitGeometryDataOnSystem(FbxMesh* InFbxMesh);
 
 	void SetDrawTopology(GeometryDrawTopology InTopology) { DrawTopologyType = InTopology; }
 	void BindGeometry(ID3D11DeviceContext* InDeviceContext);
 	inline bool IsBindingPossible();
 
 public:
-	__forceinline uint32 GetIndexDataCount() { return IndexDataCount; }
-	
-private:
-
-
-	GeometryDrawMethology DrawMethologyType = GeometryDrawMethology::DRAW_VERTEX;
-	GeometryDrawTopology DrawTopologyType = GeometryDrawTopology::NONE;
-
-	void* VertexData = nullptr;
-	uint32 VertexDataSize = 0;
-	uint32 EachVertexSize = 0;
-
-	ID3D11Buffer* VertexBuffer = nullptr;
+	__forceinline uint32 GetIndexDataNum() { return IndexDataNum; }
 	
 
-	void* IndexData = nullptr;
-	uint32 IndexDataSize = 0;
-	uint32 IndexDataCount = 0;
-
-	ID3D11Buffer* IndexBuffer = nullptr;
-	
 };
 
 
@@ -71,7 +76,7 @@ static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(GeometryDrawTopology InTopolo
 	case GeometryDrawTopology::NONE:
 		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	case GeometryDrawTopology::TRIANGLELIST:
-		return D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 
 	default:
@@ -81,13 +86,8 @@ static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(GeometryDrawTopology InTopolo
 
 inline bool SSGeometryAsset::IsBindingPossible()
 {
-	return IsVertexDataOnGPU()&&
-		(
-			(DrawMethologyType == GeometryDrawMethology::DRAW_INDEX && IsIndexDataOnGPU())
-			||
-			DrawMethologyType == GeometryDrawMethology::DRAW_VERTEX
-			)
-
-		;
+	return (
+		VertexData != nullptr && IndexData != nullptr
+		);
 }
 

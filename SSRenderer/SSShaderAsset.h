@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <d3d11.h>
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSShaderReflectionForMaterial.h"
 
@@ -34,7 +34,7 @@ public:
 
 	// TODO: 지금은 셰이더당 버퍼가 있는데 셰이더당 버퍼가 아니라 메테리얼당 버퍼가 있어야 한다
 
-	void BindShaderAsset(ID3D11DeviceContext* DeviceContext);
+	void BindShaderAsset(ID3D11DeviceContext* _deviceContext);
 
 
 

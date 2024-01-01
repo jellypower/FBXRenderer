@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <d3d11.h>
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSShaderAsset.h"
 

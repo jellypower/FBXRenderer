@@ -1,5 +1,5 @@
 #pragma once
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 
 
 #include <windows.h>

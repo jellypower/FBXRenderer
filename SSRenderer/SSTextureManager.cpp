@@ -1,6 +1,6 @@
 #include "SSTextureManager.h"
 
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 #include "ExternalUtils/DDSTextureLoader.h"
 
 using namespace DirectX;
@@ -8,8 +8,8 @@ using namespace DirectX;
 HRESULT SSTextureManager::TempLoadTexture(ID3D11Device* InDevice)
 {
 	TextureCount = 1;
-	TextureRVList = new ID3D11ShaderResourceView*[TextureCount];
-	TextureList = new ID3D11Resource*[TextureCount];
+	TextureRVList = DBG_NEW ID3D11ShaderResourceView*[TextureCount];
+	TextureList = DBG_NEW ID3D11Resource*[TextureCount];
 
 	HRESULT hr = S_OK;
 

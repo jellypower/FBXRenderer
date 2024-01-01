@@ -18,22 +18,29 @@
 
 #define __CLASS__ (typeid(*this).name())
 
-#define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR, __CLASS__, __func__, __LINE__, __VA_ARGS__)
-#define SS_CLASS_WARNING_LOG(STR, ...) printf_s("Warning(%s:%s, Line: %d): "##STR, __CLASS__, __func__, __LINE__, __VA_ARGS__)
+#define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__); __debugbreak();
+#define WSS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__); __debugbreak();
+#define SS_CLASS_WARNING_LOG(STR, ...) printf_s("Warning(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__)
 
 #include <crtdbg.h>
 #define _CRTDBG_MAP_ALLOC
-#define new new (_NORMAL_BLOCK , __FILE__ , __LINE__)
-#define malloc(s) _malloc_dbg(s,_NORMAL_BLOCK,__FILE__,__LINE__)
+#define DBG_NEW new (_NORMAL_BLOCK , __FILE__ , __LINE__)
+#define DBG_MALLOC(s) _malloc_dbg(s,_NORMAL_BLOCK,__FILE__,__LINE__)
 #include <stdlib.h>
 
 
 
 // ======================================================================================
 #else
-#define SS_LOG(n) 
-#define WSS_LOG(n)
+#define SS_LOG(...) 
+#define WSS_LOG(...)
 #define __CLASS__ 
-#define SS_CLASS_ERR_LOG(n)
+#define SS_CLASS_ERR_LOG(...)
+#define SS_CLASS_WARNING_LOG(...)
+
+#define WSS_CLASS_ERR_LOG(...)
+
+#define DBG_NEW new
+#define DBG_MALLOC(s) malloc(s)
 
 #endif

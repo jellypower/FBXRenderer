@@ -6,11 +6,12 @@
 #include <directxcolors.h>
 
 #include "../resource.h"
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 #include "SSShaderAssetManager.h"
 #include "SSMaterialAssetManager.h"
 #include "SSTextureManager.h"
 #include "SSGeometryAssetManager.h"
+#include "SSModelAssetManager.h"
 #include "SSFBXImporter/SSFBXImporter.h"
 
 class SSRenderer {
@@ -20,18 +21,15 @@ public:
 	HRESULT InitShaderManager();
 	HRESULT InitMaterialManager();
 	HRESULT InitGeometryManager();
-	HRESULT InitModelAssetManager();
+	HRESULT ImportFBXFileToAssetPool();
 	void InitCameraTemp();
 	void CleanUp();
 
 	// HACK: PerFrame µû·Î »©³õ±â
 	void PerFrameTemp();
+	float _camYRotation = 0;
+	float _camXRotation = 0;
 
-
-	float ElapsedTime = 0;
-	float CurTime = 0;
-	float StartTime = 0;
-	void CalcDeltaTime();
 private:
 
 private:
@@ -40,7 +38,7 @@ private:
 
 	ID3D11Device* D3DDevice = nullptr;
 	ID3D11Device1* D3DDevice1 = nullptr;
-	ID3D11DeviceContext* DeviceContext = nullptr;
+	ID3D11DeviceContext* _deviceContext = nullptr;
 	ID3D11DeviceContext* DeviceContext1 = nullptr;
 	IDXGISwapChain* SwapChain = nullptr;
 	IDXGISwapChain1* SwapChain1 = nullptr;
@@ -61,6 +59,8 @@ private:
 	SSMaterialAssetManager MaterialManager;
 	SSTextureManager TextureManager;
 	SSGeometryAssetManager GeometryManager;
+	SSModelAssetManager ModelManager;
+	
 	SSFBXImporter FbxImporter;
 
 	class SSCamera* RenderTarget;

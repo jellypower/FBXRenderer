@@ -1,6 +1,6 @@
 #include "SSShaderAssetManager.h"
 #include "ExternalUtils/ExternalUtils.h"
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 
 
 void SSShaderAssetManager::Init()
@@ -11,8 +11,8 @@ void SSShaderAssetManager::Init()
 	// TODO: 나중에 init에서 HRESULT 넣어주기
 
 	// TEMP
-	ShaderList = new SSShaderAsset * [DEFAULT_POOL_SIZE];
-	ShaderList[ShaderPoolCount] = new SSShaderAsset(L"Resource/Shader/Tutorial07.fxh", "VS", "PS", "vs_4_0");
+	ShaderList = DBG_NEW SSShaderAsset * [DEFAULT_POOL_SIZE];
+	ShaderList[ShaderPoolCount] = DBG_NEW SSShaderAsset(L"Resource/Shader/Tutorial07.fxh", "VS", "PS", "vs_4_0");
 	ShaderPoolCount++;
 	// TEMPEND
 }
@@ -28,7 +28,7 @@ HRESULT SSShaderAssetManager::CompileAllShader()
 	for (uint8 i = 0; i < ShaderPoolCount; i++) {
 		HRESULT hr = ShaderList[i]->CompileShader();
 		if (FAILED(hr)) {
-			SS_LOG("Error(SSRenderer): Shader compile failed. ShaderIdx: %d\n", i);
+			SS_CLASS_ERR_LOG("Shader compile failed. ShaderIdx: %d", i);
 			return hr;
 		}
 	}

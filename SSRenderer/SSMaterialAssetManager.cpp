@@ -1,12 +1,12 @@
 #include "SSMaterialAssetManager.h"
 #include "SSShaderAssetManager.h"
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 #include "SSTextureManager.h"
 
 
 void SSMaterialAssetManager::Init()
 {
-	MaterialList = new SSMaterialAsset * [DEFAULT_POOL_SIZE];
+	MaterialList = DBG_NEW SSMaterialAsset * [DEFAULT_POOL_SIZE];
 }
 
 void SSMaterialAssetManager::Release()
@@ -17,7 +17,7 @@ void SSMaterialAssetManager::Release()
 HRESULT SSMaterialAssetManager::InstantiateAllMaterialsTemp(ID3D11Device* InDevice
 	, SSShaderAssetManager* InShaderManager, SSTextureManager* InTextureManager)
 {
-	MaterialList[MaterialPoolCount++] = new SSMaterialAsset();
+	MaterialList[MaterialPoolCount++] = DBG_NEW SSMaterialAsset();
 	HRESULT hr = MaterialList[0]->InitTemp(InDevice
 		, InShaderManager->GetShaderAsset(0), InTextureManager);
 

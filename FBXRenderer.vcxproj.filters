@@ -84,6 +84,15 @@
     <ClInclude Include="SSRenderer\SSModelAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSInput.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSFrameInfo.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSNativeKeywords.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">
@@ -143,6 +152,12 @@
     <ClCompile Include="SSRenderer\SSModelAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="SSEngineDefault\SSInput.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSEngineDefault\SSFrameInfo.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FBXRenderer.rc">
@@ -159,5 +174,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\Shader\Tutorial07.fxh" />
+    <None Include="Resource\Shader\LambertShader.fxh" />
   </ItemGroup>
 </Project>

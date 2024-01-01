@@ -1,9 +1,16 @@
 #include "SSGeometryAssetManager.h"
-#include "SSDebugLogger.h"
+#include "SSEngineDefault/SSDebugLogger.h"
 
-void SSGeometryAssetManager::Init()
+void SSGeometryAssetManager::Init(int PoolSize)
 {
-	GeometryList = new SSGeometryAsset * [DEFAULT_POOL_SIZE];
+	if (PoolSize == 0) {
+		GeometryList = DBG_NEW SSGeometryAsset * [DEFAULT_POOL_SIZE];
+		GeometryPoolMax = DEFAULT_POOL_SIZE;
+	}
+	else {
+		GeometryList = DBG_NEW SSGeometryAsset * [PoolSize];
+		GeometryPoolMax = PoolSize;
+	}
 }
 
 void SSGeometryAssetManager::Release()
@@ -16,32 +23,50 @@ void SSGeometryAssetManager::Release()
 	delete[] GeometryList;
 }
 
-void SSGeometryAssetManager::LoadAllGeometryAssetTemp()
+void SSGeometryAssetManager::InstantiateNewGeometry(FbxMesh* InFbxMesh)
 {
-	GeometryList[GeometryPoolCount++] = new SSGeometryAsset();
-	
-	GeometryList[0]->InitVertexDataOnSystem();
-	GeometryList[0]->LoadIndexDataOnSystem();
+	SSGeometryAsset* NewAsset;
+	SS_LOG("%s: %d\n", InFbxMesh->GetNode()->GetName(), GeometryPoolCount);
+	GeometryList[GeometryPoolCount++] = NewAsset = DBG_NEW SSGeometryAsset();
+
+
+	if (GeometryPoolCount > GeometryPoolMax) {
+		SS_CLASS_WARNING_LOG("Pool is full");
+		return;
+	}
+
+	NewAsset->InitGeometryDataOnSystem(InFbxMesh);
 
 }
 
 HRESULT SSGeometryAssetManager::SendAllGeometryAssetToGPUTemp(ID3D11Device* InDevice)
 {
-	
+
 	HRESULT hr = GeometryList[0]->SendVertexDataOnGPU(InDevice);
 	if (FAILED(hr)) {
-		SS_LOG("Error(SSGeometryAssetManager::LoadAllGeometryAssetTemp): \
-			Vertex Creation failed on GPU.\n");
+		SS_CLASS_ERR_LOG();
 		return hr;
 	}
 
 	hr = GeometryList[0]->SendIndexDataOnGPU(InDevice);
 	if (FAILED(hr)) {
-		SS_LOG("Error(SSGeometryAssetManager::LoadAllGeometryAssetTemp): \
-			Index data Creation failed on GPU.\n");
+		SS_CLASS_ERR_LOG();
 		return hr;
 	}
 
+	for (int i = 1; i < GeometryPoolCount; i++) {
+		hr = GeometryList[i]->SendVertexDataOnGPU(InDevice);
+		if (FAILED(hr)) {
+			SS_CLASS_ERR_LOG();
+			return hr;
+		}
+
+		hr = GeometryList[i]->SendIndexDataOnGPU(InDevice);
+		if (FAILED(hr)) {
+			SS_CLASS_ERR_LOG();
+			return hr;
+		}
+	}
 
 	return S_OK;
 }

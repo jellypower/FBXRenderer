@@ -1,6 +1,6 @@
 #pragma once
 
-#include "SSNativeTypes.h"
+#include "SSEngineDefault/SSNativeTypes.h"
 #include "SSMaterialAsset.h"
 
 class SSShaderAssetManager;
