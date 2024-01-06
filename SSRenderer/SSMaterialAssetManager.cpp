@@ -1,25 +1,28 @@
 #include "SSMaterialAssetManager.h"
 #include "SSShaderAssetManager.h"
 #include "SSEngineDefault/SSDebugLogger.h"
+
+#include "SSShaderAssetManager.h"
 #include "SSTextureManager.h"
 
+SSMaterialAssetManager* SSMaterialAssetManager::g_instance = nullptr;
 
-void SSMaterialAssetManager::Init()
+SSMaterialAssetManager::SSMaterialAssetManager(uint32 poolCapacity)
 {
-	MaterialList = DBG_NEW SSMaterialAsset * [DEFAULT_POOL_SIZE];
+	MaterialList = DBG_NEW SSMaterialAsset * [poolCapacity];
+	_poolCapacity = poolCapacity;
 }
 
-void SSMaterialAssetManager::Release()
+SSMaterialAssetManager::~SSMaterialAssetManager()
 {
 	delete[] MaterialList;
 }
 
-HRESULT SSMaterialAssetManager::InstantiateAllMaterialsTemp(ID3D11Device* InDevice
-	, SSShaderAssetManager* InShaderManager, SSTextureManager* InTextureManager)
+HRESULT SSMaterialAssetManager::InstantiateAllMaterialsTemp(ID3D11Device* InDevice)
 {
-	MaterialList[MaterialPoolCount++] = DBG_NEW SSMaterialAsset();
+	MaterialList[_poolCount++] = DBG_NEW SSMaterialAsset();
 	HRESULT hr = MaterialList[0]->InitTemp(InDevice
-		, InShaderManager->GetShaderAsset(0), InTextureManager);
+		, SSShaderAssetManager::Get()->GetShaderAsset(0));
 
 	hr = MaterialList[0]->InstantiateShader(InDevice);
 
@@ -33,13 +36,10 @@ HRESULT SSMaterialAssetManager::InstantiateAllMaterialsTemp(ID3D11Device* InDevi
 
 }
 
-
 void SSMaterialAssetManager::ReleaseAllMaterialsTemp()
 {
-	for (int i = 0; i < MaterialPoolCount; i++) {
+	for (int i = 0; i < _poolCount; i++) {
 		MaterialList[i]->Release();
 		delete MaterialList[i];
 	}
-
-
 }

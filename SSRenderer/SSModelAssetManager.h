@@ -3,12 +3,11 @@
 #include "SSModelAsset.h"
 
 class SSMaterialAssetManager;
-class SSGeometryAssetManager;
 
 class SSModelAssetManager
 {
 public:
-	void Init(/*TODO: file* ModelList, */ SSMaterialAssetManager* InMaterialManager, SSGeometryAssetManager* InGeometryManager);
+	void Init(SSMaterialAssetManager* InMaterialManager);
 	void Release();
 
 	void ReleaseAllModels();
@@ -25,7 +24,6 @@ private:
 	SSModelAsset** ModelAssetList;
 
 	SSMaterialAssetManager* MaterialManager;
-	SSGeometryAssetManager* GeometryManager;
 
 };
 

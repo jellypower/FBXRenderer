@@ -2,35 +2,45 @@
 #include <windows.h>
 #include <d3d11.h>
 
-#include "SSEngineDefault/SSNativeTypes.h"
+#include "SSEngineDefault/SSEngineDefault.h"
 
 #include "SSShaderAsset.h"
 
 class SSShaderAssetManager
 {
-public:
-	void Init(/*TODO: file* ShaderList*/);
-	void Release();
-
-	/** TODO: Register/UnRegister shader functionality*/
-	/** TODO: Read file from functionality must be seperated as ExternalUtils*/
-	HRESULT CompileAllShader();
-
-	HRESULT InstantiateShader(uint8 ShaderName /*TODO: change as hash*/, ID3D11Device* InDevice);
-	HRESULT InstantiateAllShader(ID3D11Device* InDevice);
-	
-
-	void ReleaseShader(uint8 ShaderName /*TPDP" change as hash*/);
-	void ReleaseAllShader();
-
-	/** TODO: replace as map with hash string*/
-	inline SSShaderAsset* GetShaderAsset(uint8 idx) {
-		return ShaderList[idx];
+	friend class SSRenderer;
+	SS_DECLARE_AS_SINGLETON(SSShaderAssetManager)
+private:
+	static FORCEINLINE void Instantiate(uint32 poolCapacity) {
+		if (g_instance != nullptr) {
+			assert(false);
+			return;
+		}
+		g_instance = DBG_NEW SSShaderAssetManager(poolCapacity);
 	}
 
+
 private:
-	/** TODO: replace as map with hash string*/
-	static constexpr uint8 DEFAULT_POOL_SIZE = 10;
-	uint8 ShaderPoolCount = 0;
+	uint32 _shaderPoolCount = 0;
+	uint32 _shaderPoolCapacity = 0;
 	SSShaderAsset** ShaderList;
+
+public:
+	FORCEINLINE SSShaderAsset* GetShaderAsset(uint32 idx) {
+		assert(idx < _shaderPoolCount);
+		return ShaderList[idx];
+	}
+	void LoadNewShaderTemp();
+
+private:
+	SSShaderAssetManager(uint32 poolCapacity);
+	~SSShaderAssetManager();
+
+	HRESULT CompileAllShader();
+
+	HRESULT InstantiateShader(uint32 ShaderName, ID3D11Device* InDevice);
+	HRESULT InstantiateAllShader(ID3D11Device* InDevice);
+
+	void ReleaseShader(uint32 ShaderName /*TODO: change as hash*/);
+	void ReleaseAllShader();
 };

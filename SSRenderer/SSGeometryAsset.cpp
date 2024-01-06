@@ -6,42 +6,28 @@
 
 
 
-struct SimpleVertex
-{
-	XMFLOAT3 Pos;
-	XMFLOAT2 Tex;
-};
-
-struct PhongVertex {
-	Vector4f Pos;
-	Vector4f Normal;
-	Vector4f Color;
-};
-
-
-
 void SSGeometryAsset::ReleaseVertexDataOnSystem()
 {
-	free(VertexData);
-	VertexData = nullptr;
+	free(_vertexData);
+	_vertexData = nullptr;
 }
 
-HRESULT SSGeometryAsset::SendVertexDataOnGPU(ID3D11Device* InDevice)
+HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 {
-	if (VertexData == nullptr) {
-		SS_LOG("Error(SSGeometryAsset::SendVertexDataOnGPU): Vertex data must be initialzed");
+	if (_vertexData == nullptr) {
+		SS_CLASS_WARNING_LOG("Vertex data must be initialized");
 		return E_FAIL;
 	}
 
 	D3D11_BUFFER_DESC bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = VertexDataSize;
+	bd.ByteWidth = _vertexDataSize;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 
 	D3D11_SUBRESOURCE_DATA InitData = {}; // 버퍼의 초기 데이터는 여기 써 넣어준다.
-	InitData.pSysMem = VertexData;
-	HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &VertexBuffer);
+	InitData.pSysMem = _vertexData;
+	HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &_vertexBuffer);
 
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG(" Vertex buffer creation failed.");
@@ -53,80 +39,38 @@ HRESULT SSGeometryAsset::SendVertexDataOnGPU(ID3D11Device* InDevice)
 
 void SSGeometryAsset::ReleaseVertexDataOnGPU()
 {
-	if (VertexBuffer == nullptr) return;
+	if (_vertexBuffer == nullptr) return;
 
-	VertexBuffer->Release();
-	VertexBuffer = nullptr;
+	_vertexBuffer->Release();
+	_vertexBuffer = nullptr;
 
-	EachVertexDataSize = 0;
-	VertexDataSize = 0;
-
-}
-
-void SSGeometryAsset::LoadIndexDataOnSystemTemp()
-{
-	if (IndexData != nullptr) {
-		SS_CLASS_WARNING_LOG("memory leakage possible.");
-	}
-
-	// HACK:
-	{
-		WORD indices[] =
-		{
-			3,1,0,
-			2,1,3,
-
-			6,4,5,
-			7,4,6,
-
-			11,9,8,
-			10,9,11,
-
-			14,12,13,
-			15,12,14,
-
-			19,17,16,
-			18,17,19,
-
-			22,20,21,
-			23,20,22
-		};
-
-
-		IndexDataSize = sizeof(WORD) * 36;
-		IndexDataNum = 36;
-		IndexData = DBG_MALLOC(IndexDataSize);
-
-		memcpy_s(IndexData, IndexDataSize, indices, IndexDataSize);
-
-	}
-
+	_eachVertexDataSize = 0;
+	_vertexDataSize = 0;
 
 }
 
 void SSGeometryAsset::ReleaseIndexDataOnSystem()
 {
-	free(IndexData);
-	IndexData = nullptr;
-
+	free(_indexData);
+	_indexData = nullptr;
 }
 
 HRESULT SSGeometryAsset::SendIndexDataOnGPU(ID3D11Device* InDevice)
 {
-	if (IndexData == nullptr) {
+	if (_indexData == nullptr) {
 		SS_CLASS_ERR_LOG(" Index data must be initialzed");
 		return E_FAIL;
 	}
 
 	D3D11_BUFFER_DESC bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = IndexDataSize;
+	bd.ByteWidth = _indexDataSize;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 
 	D3D11_SUBRESOURCE_DATA InitData = {}; // 버퍼의 초기 데이터는 여기 써 넣어준다.
-	InitData.pSysMem = IndexData;
-	HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &IndexBuffer);
+	InitData.pSysMem = _indexData;
+	HRESULT hr = InDevice->CreateBuffer(&bd, &InitData, &_indexBuffer);
 
 
 	if (FAILED(hr)) {
@@ -139,15 +83,15 @@ HRESULT SSGeometryAsset::SendIndexDataOnGPU(ID3D11Device* InDevice)
 
 void SSGeometryAsset::ReleaseIndexDataOnGPU()
 {
-	if (IndexBuffer == nullptr) return;
-	IndexBuffer->Release();
-	IndexBuffer = nullptr;
-	IndexDataSize = 0;
+	if (_indexBuffer == nullptr) return;
+	_indexBuffer->Release();
+	_indexBuffer = nullptr;
+	_indexDataSize = 0;
 }
 
 HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 {
-	if (VertexData != nullptr) {
+	if (_vertexData != nullptr) {
 		SS_CLASS_WARNING_LOG("memory leakage possible. function just return.");
 		return E_FAIL;
 	}
@@ -166,20 +110,20 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 	switch (FbxNormal->GetMappingMode()) {
 
 	case FbxLayerElement::eByControlPoint:
-		VertexDataNum = ControlPointNum; break;
+		_vertexDataNum = ControlPointNum; break;
 	case FbxLayerElement::eByPolygonVertex:
-		VertexDataNum = PolygonVertexNum; break;
+		_vertexDataNum = PolygonVertexNum; break;
 
 	default:
-		free(IndexData);
+		free(_indexData);
 		SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
 		return E_FAIL;
 	}
 
-	EachVertexDataSize = sizeof(PhongVertex);
-	VertexDataSize = EachVertexDataSize * VertexDataNum;
-	VertexData = DBG_MALLOC(VertexDataSize);
-	PhongVertex* phVertices = (PhongVertex*)VertexData;
+	_eachVertexDataSize = sizeof(PhongVertex);
+	_vertexDataSize = _eachVertexDataSize * _vertexDataNum;
+	_vertexData = (PhongVertex*)DBG_MALLOC(_vertexDataSize);
+	PhongVertex* phVertices = (PhongVertex*)_vertexData;
 
 	// 3. alloc index memory
 	constexpr int VERTEX_NUM_IN_A_TRIANGLE = 3;
@@ -188,12 +132,12 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 		TriangleNumInModel += (InFbxMesh->GetPolygonSize(i) - 2);
 	}
 
-	EachIndexDataSize = sizeof(uint16);
-	IndexDataNum = TriangleNumInModel * VERTEX_NUM_IN_A_TRIANGLE;
-	IndexDataSize = EachIndexDataSize * IndexDataNum;
-	IndexData = DBG_MALLOC(IndexDataSize);
+	_eachIndexDataSize = sizeof(uint16);
+	_indexDataNum = TriangleNumInModel * VERTEX_NUM_IN_A_TRIANGLE;
+	_indexDataSize = _eachIndexDataSize * _indexDataNum;
+	_indexData = DBG_MALLOC(_indexDataSize);
 
-	uint16* IndexData16 = (uint16*)IndexData;
+	uint16* IndexData16 = (uint16*)_indexData;
 	uint32 CurIndexDataIdx = 0;
 
 
@@ -222,7 +166,7 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 				IndexData16[CurIndexDataIdx++] = InFbxMesh->GetPolygonVertex(i, j + 1);
 			}
 		}
-		assert(IndexDataNum == CurIndexDataIdx);
+		assert(_indexDataNum == CurIndexDataIdx);
 
 		break;
 	case FbxLayerElement::eByPolygonVertex:
@@ -254,12 +198,12 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 			}
 			VertexIdxCounter += InFbxMesh->GetPolygonSize(i);
 		}
-		assert(IndexDataNum == CurIndexDataIdx);
+		assert(_indexDataNum == CurIndexDataIdx);
 
 		break;
 	default:
-		free(IndexData);
-		free(VertexData);
+		free(_indexData);
+		free(_vertexData);
 		SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
 		return E_FAIL;
 	}
@@ -295,8 +239,8 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 
 			break;
 		default:
-			free(IndexData);
-			free(VertexData);
+			free(_indexData);
+			free(_vertexData);
 			SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
 			return E_FAIL;
 		}
@@ -331,7 +275,7 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 					VertexIdxCounter++;
 				}
 			}
-			assert(VertexIdxCounter == VertexDataNum);
+			assert(VertexIdxCounter == _vertexDataNum);
 
 			break;
 		case FbxLayerElement::EReferenceMode::eIndex:
@@ -350,20 +294,20 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 					VertexIdxCounter++;
 				}
 			}
-			assert(VertexIdxCounter == VertexDataNum);
+			assert(VertexIdxCounter == _vertexDataNum);
 
 			break;
 		default:
-			free(IndexData);
-			free(VertexData);
+			free(_indexData);
+			free(_vertexData);
 			SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
 			return E_FAIL;
 		}
 
 		break;
 	default:
-		free(IndexData);
-		free(VertexData);
+		free(_indexData);
+		free(_vertexData);
 		SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
 		return E_FAIL;
 	}
@@ -378,7 +322,7 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 
 	// TODO: 컬러 칠하기
 
-	for (int i = 0; i < VertexDataNum; i++) {
+	for (int i = 0; i < _vertexDataNum; i++) {
 		
 		phVertices[i].Color = Vector4f(1, 1, 1, 1);
 		phVertices[i].Color = Vector4f(1, 1, 1, 1);
@@ -393,9 +337,9 @@ HRESULT SSGeometryAsset::InitGeometryDataOnSystem(fbxsdk::FbxMesh* InFbxMesh)
 void SSGeometryAsset::BindGeometry(ID3D11DeviceContext* InDeviceContext)
 {
 	uint32 offset = 0;
-	InDeviceContext->IASetVertexBuffers(0, 1, &VertexBuffer, &EachVertexDataSize, &offset);
-	InDeviceContext->IASetIndexBuffer(IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	InDeviceContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &_eachVertexDataSize, &offset);
+	InDeviceContext->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
-	InDeviceContext->IASetPrimitiveTopology(ConvertToD3DTopology(DrawTopologyType));
+	InDeviceContext->IASetPrimitiveTopology(ConvertToD3DTopology(_drawTopologyType));
 }
 

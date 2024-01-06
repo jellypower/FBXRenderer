@@ -20,7 +20,7 @@ public:
 
 	// TODO: 파일로부터 읽어와서 텍스쳐, 셰이더 가져오기
 	HRESULT InitTemp(ID3D11Device* InDevice,
-		class SSShaderAsset* InShaderAsset, class SSTextureManager* InTextureManager);
+		class SSShaderAsset* InShaderAsset);
 	void Release();
 
 	void BindMaterial(ID3D11DeviceContext* InDeviceContext);

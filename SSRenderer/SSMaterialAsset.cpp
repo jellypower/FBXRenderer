@@ -1,14 +1,12 @@
 #include "SSMaterialAsset.h"
 
 #include "SSEngineDefault/SSDebugLogger.h"
-#include "SSTextureManager.h"
 
 #include <directxmath.h>
 
 using namespace DirectX;
 
-HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice,
-	SSShaderAsset* InShaderAsset, SSTextureManager* InTextureManager)
+HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice, SSShaderAsset* InShaderAsset)
 {
 	if (InShaderAsset->GetShaderInstanceStage() < ShaderAssetInstanceStage::Instantiated) {
 		SS_LOG("Error(SSMaterial): To make material, shader asset layout must be initialized \n");
@@ -19,7 +17,7 @@ HRESULT SSMaterialAsset::InitTemp(ID3D11Device* InDevice,
 	ShaderReflectionMetadata = Shader->GetShaderReflectionPointer();
 
 	
-	TextureList = DBG_NEW ID3D11ShaderResourceView * [ShaderReflectionMetadata->TextureCount];
+	TextureList = DBG_NEW ID3D11ShaderResourceView * [ShaderReflectionMetadata->_texturePoolCount];
 	SampleStateList = DBG_NEW ID3D11SamplerState * [ShaderReflectionMetadata->SamplerCount];
 
 
@@ -73,7 +71,7 @@ void SSMaterialAsset::Release()
 		free(ConstBufferData[i]);
 	}
 
-	for (int i = 0; i < ShaderReflectionMetadata->TextureCount; i++) {
+	for (int i = 0; i < ShaderReflectionMetadata->_texturePoolCount; i++) {
 		SampleStateList[i]->Release();
 	}
 
@@ -107,7 +105,7 @@ void SSMaterialAsset::BindMaterial(ID3D11DeviceContext* InDeviceContext)
 	}
 
 
-	InDeviceContext->PSSetShaderResources(0, ShaderReflectionMetadata->TextureCount, TextureList);
+	InDeviceContext->PSSetShaderResources(0, ShaderReflectionMetadata->_texturePoolCount, TextureList);
 	InDeviceContext->PSSetSamplers(0, ShaderReflectionMetadata->SamplerCount, SampleStateList);
 
 }

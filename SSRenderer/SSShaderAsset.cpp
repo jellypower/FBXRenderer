@@ -244,7 +244,7 @@ HRESULT SSShaderAsset::CompileShader()
 
 		// TODO: 나중에 VS셰이더에 텍스쳐가 필요할 수도 있음
 		// 04. PS Texture and Sampler reflection
-		ShaderReflection.TextureCount = 0;
+		ShaderReflection._texturePoolCount = 0;
 		ShaderReflection.SamplerCount = 0;
 
 		for (int i = 0; i < PSShaderDesc.BoundResources; i++) {
@@ -260,7 +260,7 @@ HRESULT SSShaderAsset::CompileShader()
 			}
 
 			switch (bufdesc.Type) {
-			case D3D_SIT_TEXTURE: ShaderReflection.TextureCount++; break;
+			case D3D_SIT_TEXTURE: ShaderReflection._texturePoolCount++; break;
 			case D3D_SIT_SAMPLER: ShaderReflection.SamplerCount++; break;
 
 			default: break;

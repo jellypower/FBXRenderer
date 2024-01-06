@@ -1,5 +1,6 @@
 #pragma once
 #include "SSEngineDefault/SSNativeTypes.h"
+#include "SSPlaceableObject.h"
 
 #include <d3d11.h>
 
@@ -12,8 +13,14 @@ enum class ModelAssetInstanceStage {
 
 };
 
-class SSModelAsset
+class SSModelAsset : public SSPlaceableObject
 {
+private:
+	ModelAssetInstanceStage InstanceStage = ModelAssetInstanceStage::JustCreated;
+
+	SSGeometryAsset* Geometry = nullptr;
+	SSMaterialAsset* Material = nullptr;
+
 public:
 
 	void InitTemp(SSMaterialAsset* InMaterial, SSGeometryAsset* InGeometry);
@@ -24,14 +31,5 @@ public:
 
 	SSGeometryAsset* GetGeometryAsset() { return Geometry; }
 
-
-private:
-
-	ModelAssetInstanceStage InstanceStage = ModelAssetInstanceStage::JustCreated;
-
-	SSGeometryAsset* Geometry = nullptr;
-	SSMaterialAsset* Material = nullptr;
-
-	Transform transform;
 
 };

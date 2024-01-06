@@ -1,22 +1,17 @@
 #include "SSGeometryAssetManager.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 
-void SSGeometryAssetManager::Init(int PoolSize)
+SSGeometryAssetManager* SSGeometryAssetManager::_instance = nullptr;
+
+SSGeometryAssetManager::SSGeometryAssetManager(uint32 poolSize)
 {
-	if (PoolSize == 0) {
-		GeometryList = DBG_NEW SSGeometryAsset * [DEFAULT_POOL_SIZE];
-		GeometryPoolMax = DEFAULT_POOL_SIZE;
-	}
-	else {
-		GeometryList = DBG_NEW SSGeometryAsset * [PoolSize];
-		GeometryPoolMax = PoolSize;
-	}
+	GeometryList = DBG_NEW SSGeometryAsset * [poolSize];
+	_geometryPoolCapacity = poolSize;
 }
 
-void SSGeometryAssetManager::Release()
+SSGeometryAssetManager::~SSGeometryAssetManager()
 {
-
-	for (int i = 0; i < GeometryPoolCount; i++) {
+	for (int i = 0; i < _geometryPoolCount; i++) {
 		delete GeometryList[i];
 	}
 
@@ -26,11 +21,11 @@ void SSGeometryAssetManager::Release()
 void SSGeometryAssetManager::InstantiateNewGeometry(FbxMesh* InFbxMesh)
 {
 	SSGeometryAsset* NewAsset;
-	SS_LOG("%s: %d\n", InFbxMesh->GetNode()->GetName(), GeometryPoolCount);
-	GeometryList[GeometryPoolCount++] = NewAsset = DBG_NEW SSGeometryAsset();
+	SS_LOG("%s: %d\n", InFbxMesh->GetNode()->GetName(), _geometryPoolCount);
+	GeometryList[_geometryPoolCount++] = NewAsset = DBG_NEW SSGeometryAsset();
 
 
-	if (GeometryPoolCount > GeometryPoolMax) {
+	if (_geometryPoolCount > _geometryPoolCapacity) {
 		SS_CLASS_WARNING_LOG("Pool is full");
 		return;
 	}
@@ -42,7 +37,7 @@ void SSGeometryAssetManager::InstantiateNewGeometry(FbxMesh* InFbxMesh)
 HRESULT SSGeometryAssetManager::SendAllGeometryAssetToGPUTemp(ID3D11Device* InDevice)
 {
 
-	HRESULT hr = GeometryList[0]->SendVertexDataOnGPU(InDevice);
+	HRESULT hr = GeometryList[0]->UpdateDataOnGPU(InDevice);
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG();
 		return hr;
@@ -54,8 +49,8 @@ HRESULT SSGeometryAssetManager::SendAllGeometryAssetToGPUTemp(ID3D11Device* InDe
 		return hr;
 	}
 
-	for (int i = 1; i < GeometryPoolCount; i++) {
-		hr = GeometryList[i]->SendVertexDataOnGPU(InDevice);
+	for (int i = 1; i < _geometryPoolCount; i++) {
+		hr = GeometryList[i]->UpdateDataOnGPU(InDevice);
 		if (FAILED(hr)) {
 			SS_CLASS_ERR_LOG();
 			return hr;
@@ -73,7 +68,7 @@ HRESULT SSGeometryAssetManager::SendAllGeometryAssetToGPUTemp(ID3D11Device* InDe
 
 void SSGeometryAssetManager::ReleaseAllGeometryDataOnSystem()
 {
-	for (int i = 0; i < GeometryPoolCount; i++) {
+	for (int i = 0; i < _geometryPoolCount; i++) {
 		GeometryList[i]->ReleaseVertexDataOnSystem();
 		GeometryList[i]->ReleaseIndexDataOnSystem();
 	}
@@ -81,7 +76,7 @@ void SSGeometryAssetManager::ReleaseAllGeometryDataOnSystem()
 
 void SSGeometryAssetManager::ReleaseAllGeometryDataOnGPU()
 {
-	for (int i = 0; i < GeometryPoolCount; i++) {
+	for (int i = 0; i < _geometryPoolCount; i++) {
 		GeometryList[i]->ReleaseVertexDataOnGPU();
 		GeometryList[i]->ReleaseIndexDataOnGPU();
 	}

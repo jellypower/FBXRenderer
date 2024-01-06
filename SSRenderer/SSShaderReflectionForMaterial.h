@@ -42,7 +42,7 @@ typedef struct _SSShaderReflectionForMaterial {
 	uint8 EntireConstBufferNum = 0;
 	uint8 ConstBufferSlotMax = 0;
 
-	uint8 TextureCount = 0;
+	uint8 _texturePoolCount = 0;
 	uint8 SamplerCount = 0;
 
 } SSShaderReflectionForMaterial;

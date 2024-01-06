@@ -1,12 +1,18 @@
 #pragma once
-#include "framework.h"
+#include <Windows.h>
+
+#include "SSEngineDefault/SSVector.h"
+#include "SSDebugLogger.h"
+#include "SSNativeKeywords.h"
 
 class SSFrameInfo
 {
 	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	friend int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow);
-private:
+
 	static SSFrameInfo* _instance;
+
+private:
 	uint64 _frameCount = 0;
 	double _deltaTime = 0;
 	double _elapsedTime = 0;

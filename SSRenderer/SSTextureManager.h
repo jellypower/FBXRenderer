@@ -1,5 +1,5 @@
 #pragma once
-#include "SSEngineDefault/SSNativeTypes.h"
+#include "SSEngineDefault/SSEngineDefault.h"
 
 
 #include <windows.h>
@@ -9,16 +9,32 @@
 
 class SSTextureManager
 {
-public:
-	HRESULT TempLoadTexture(ID3D11Device* InDevice);
-	void Release();
+	friend class SSRenderer;
+	SS_DECLARE_AS_SINGLETON(SSTextureManager)
+private:
+	static FORCEINLINE void Instantiate(uint32 poolCapacity){
+		if (g_instance != nullptr) {
+			assert(false);
+			return;
+		}
+		g_instance = DBG_NEW SSTextureManager(poolCapacity);
+	}
 
-	void ReleaseAllTextures();
-	ID3D11ShaderResourceView* GetTextureByIndex(uint8 idx) { return TextureRVList[idx]; }
-	
 private:
 	ID3D11ShaderResourceView** TextureRVList = nullptr;
 	ID3D11Resource** TextureList = nullptr;
-	uint8 TextureCount = 0;
+	uint32 _texturePoolCount = 0;
+	uint32 _texturePoolCapacity = 0;
+
+public:
+	HRESULT TempLoadTexture(ID3D11Device* InDevice);
+	void ReleaseAllTextures();
+	ID3D11ShaderResourceView* GetTextureByIndex(uint32 idx) { return TextureRVList[idx]; }
+	
+private:
+	SSTextureManager(uint32 poolCount);
+	~SSTextureManager();
+
+
 };
 

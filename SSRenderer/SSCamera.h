@@ -1,17 +1,20 @@
 #pragma once
 
 #include "SSEngineDefault/SSNativeTypes.h"
+#include "SSPlaceableObject.h"
 #include "SSStaticMath.h"
 
 #include <d3d11.h>
 #include <windows.h>
 
 
-class SSCamera
+constexpr float CAM_FOV_MIN = 0.01f;
+constexpr float CAM_FOV_MAX = XM_PI * 0.99f;
+
+class SSCamera : public SSPlaceableObject
 {
 
 private:
-	Transform transform;
 	RECT ScreenRect = { 0 };
 
 	float FOVRadY = 0;
@@ -22,7 +25,7 @@ public:
 
 	SSCamera();
 	void UpdateResolutionWithClientRect(ID3D11Device* InDevice, HWND InHwnd);
-	Transform& GetTransform() { return transform;  }
+	Transform& GetTransform() { return _transform;  }
 
 
 	FORCEINLINE XMMATRIX GetViewMatrix();
@@ -47,11 +50,11 @@ public:
 
 XMMATRIX SSCamera::GetViewMatrix()
 {
-	XMVECTOR EyePos = transform.Position.SimdVec;
-	XMVECTOR Direction = transform.GetForward().SimdVec;
+	XMVECTOR EyePos = _transform.Position.SimdVec;
+	XMVECTOR Direction = _transform.GetForward().SimdVec;
 	XMVECTOR Up = Vector4f::Up.SimdVec;
 	
-	return XMMatrixLookToLH(EyePos, Direction, transform.GetUp().SimdVec);
+	return XMMatrixLookToLH(EyePos, Direction, _transform.GetUp().SimdVec);
 }
 
 XMMATRIX SSCamera::GetProjectionMatrix()
@@ -69,6 +72,18 @@ inline XMMATRIX SSCamera::GetViewProjMatrix()
 
 inline void SSCamera::SetFOVWithRadians(float InRadians)
 {
+	if (InRadians < CAM_FOV_MIN)
+	{
+		InRadians = CAM_FOV_MIN;
+		return;
+	}
+
+	if (InRadians > CAM_FOV_MAX)
+	{
+		InRadians = CAM_FOV_MAX;
+		return;
+	}
+
 	FOVRadY = InRadians;
 }
 

@@ -1,7 +1,8 @@
 #pragma once
-#include "framework.h"
-#include "SSNativeTypes.h"
+#include <Windows.h>
 
+#include "SSDebugLogger.h"
+#include "SSNativeTypes.h"
 
 
 enum class EKeyCode {

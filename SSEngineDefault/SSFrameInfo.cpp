@@ -1,5 +1,6 @@
 #include "SSFrameInfo.h"
 
+
 SSFrameInfo* SSFrameInfo::_instance = nullptr;
 
 constexpr double FRAME_LOW_LIMIT = 1 / 1000.0;

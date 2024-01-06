@@ -5,14 +5,17 @@
 #include <Windows.h>
 #include <fbxsdk.h>
 
-
-
-enum class GeometryAssetInstanceStage {
-	JustCreated = 0,
-	Initialized = 1,
-	Instantiated,
+struct SimpleVertex
+{
+	XMFLOAT3 Pos;
+	XMFLOAT2 Tex;
 };
 
+struct PhongVertex {
+	Vector4f Pos;
+	Vector4f Normal;
+	Vector4f Color;
+};
 
 
 enum class GeometryDrawTopology {
@@ -24,47 +27,43 @@ enum class GeometryDrawTopology {
 class SSGeometryAsset
 {
 private:
-	GeometryDrawTopology DrawTopologyType = GeometryDrawTopology::NONE;
+	GeometryDrawTopology _drawTopologyType = GeometryDrawTopology::NONE;
 
-	void* VertexData = nullptr;
-	uint32 VertexDataSize = 0; // == EachVertexDataSize * VertexDataNum
-	uint32 EachVertexDataSize = 0;
-	uint32 VertexDataNum = 0;
-	ID3D11Buffer* VertexBuffer = nullptr;
+	PhongVertex* _vertexData = nullptr;
+	uint32 _vertexDataSize = 0; // == _eachVertexDataSize * _vertexDataNum
+	uint32 _eachVertexDataSize = 0;
+	uint32 _vertexDataNum = 0;
+	ID3D11Buffer* _vertexBuffer = nullptr;
 
-
-	void* IndexData = nullptr;
-	uint32 IndexDataSize = 0; // == EachIndexSize * IndexDataNum
-	uint32 EachIndexDataSize = 0;
-	uint32 IndexDataNum = 0;
-	ID3D11Buffer* IndexBuffer = nullptr;
+	void* _indexData = nullptr;
+	uint32 _indexDataSize = 0; // == EachIndexSize * _indexDataNum
+	uint32 _eachIndexDataSize = 0;
+	uint32 _indexDataNum = 0;
+	ID3D11Buffer* _indexBuffer = nullptr;
 
 
 public:
 
 	void ReleaseVertexDataOnSystem();
-	bool DoesExistVertexDataOnSystem() { return VertexData != nullptr; }
+	bool UsableOnSystem() { return _vertexData != nullptr; }
 
-	HRESULT SendVertexDataOnGPU(ID3D11Device* InDevice);
+	HRESULT UpdateDataOnGPU(ID3D11Device* InDevice);
 	void ReleaseVertexDataOnGPU();
 
-	// HACK:
-	void LoadIndexDataOnSystemTemp();
-
 	void ReleaseIndexDataOnSystem();
-	bool DoesExistIndexDataOnSystem() { return IndexData != nullptr; }
+	bool DoesExistIndexDataOnSystem() { return _indexData != nullptr; }
 
 	HRESULT SendIndexDataOnGPU(ID3D11Device* InDevice);
 	void ReleaseIndexDataOnGPU();
 
 	HRESULT InitGeometryDataOnSystem(FbxMesh* InFbxMesh);
 
-	void SetDrawTopology(GeometryDrawTopology InTopology) { DrawTopologyType = InTopology; }
+	void SetDrawTopology(GeometryDrawTopology InTopology) { _drawTopologyType = InTopology; }
 	void BindGeometry(ID3D11DeviceContext* InDeviceContext);
 	inline bool IsBindingPossible();
 
 public:
-	__forceinline uint32 GetIndexDataNum() { return IndexDataNum; }
+	FORCEINLINE uint32 GetIndexDataNum() { return _indexDataNum; }
 	
 
 };
@@ -80,6 +79,7 @@ static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(GeometryDrawTopology InTopolo
 
 
 	default:
+		assert(false);
 		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	}
 }
@@ -87,7 +87,7 @@ static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(GeometryDrawTopology InTopolo
 inline bool SSGeometryAsset::IsBindingPossible()
 {
 	return (
-		VertexData != nullptr && IndexData != nullptr
+		_vertexData != nullptr && _indexData != nullptr
 		);
 }
 

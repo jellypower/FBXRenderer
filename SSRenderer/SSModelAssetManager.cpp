@@ -6,10 +6,9 @@
 #include "SSRenderer/SSMaterialAssetManager.h"
 #include "SSRenderer/SSGeometryAssetManager.h"
 
-void SSModelAssetManager::Init(/*TODO: file* ModelList, */ SSMaterialAssetManager* InMaterialManager, SSGeometryAssetManager* InGeometryManager)
+void SSModelAssetManager::Init(SSMaterialAssetManager* InMaterialManager)
 {
 	ModelAssetList = DBG_NEW SSModelAsset * [DEFAULT_POOL_SIZE];
-	GeometryManager = InGeometryManager;
 	MaterialManager = InMaterialManager;
 }
 
@@ -26,7 +25,6 @@ void SSModelAssetManager::ReleaseAllModels()
 
 void SSModelAssetManager::Release()
 {
-	GeometryManager = nullptr;
 	MaterialManager = nullptr;
 	delete[] ModelAssetList;
 }

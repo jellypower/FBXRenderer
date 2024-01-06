@@ -75,7 +75,7 @@
     <ClInclude Include="SSRenderer\SSShaderReflectionForMaterial.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSFBXImporter\SSFBXImporter.h">
+    <ClInclude Include="SSAsset\SSFBXImporter.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SSRenderer\SSModelAsset.h">
@@ -93,6 +93,30 @@
     <ClInclude Include="SSEngineDefault\SSNativeKeywords.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSRenderer\SSPlaceableObject.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\SSHierarchyObject.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\StringHashMapA.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\CityHash.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\SSUtilityContainer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSEngineDefault.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\PooledLinkedList.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSUtilityMacros.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">
@@ -100,9 +124,6 @@
     </ClCompile>
     <ClCompile Include="SSEngineDefault\SSNativeTypes.h">
       <Filter>헤더 파일\SSBasics</Filter>
-    </ClCompile>
-    <ClCompile Include="SSEngineDefault\SSDebugLogger.cpp">
-      <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\SSRenderer.cpp">
       <Filter>소스 파일</Filter>
@@ -143,7 +164,7 @@
     <ClCompile Include="SSRenderer\SSGeometryAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSFBXImporter\SSFBXImporter.cpp">
+    <ClCompile Include="SSAsset\SSFBXImporter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\SSModelAsset.cpp">
@@ -156,6 +177,15 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSEngineDefault\SSFrameInfo.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\SSPlaceableObject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\SSHierarchyObject.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSEngineDefault\SSContainer\CityHash.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -175,5 +205,8 @@
   <ItemGroup>
     <None Include="Resource\Shader\Tutorial07.fxh" />
     <None Include="Resource\Shader\LambertShader.fxh" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="SSEngineDefault\SSContainer\SSContainer.natvis" />
   </ItemGroup>
 </Project>

@@ -62,9 +62,6 @@ private:
 	CHAR SemanticStringList[LAYOUT_NUM_MAX][LAYOUT_SEMANTIC_NAME_LEN_MAX];
 	uint8 layoutElemCount = 0;
 
-
-
-
 	SSShaderReflectionForMaterial ShaderReflection;
 
 
