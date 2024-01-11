@@ -60,5 +60,36 @@
     </Expand>
   </Type>
 
+  <Type Name="SS::FixedList&lt;*&gt;">
+    <DisplayString>{{ size={_size} }}</DisplayString>
+    <Expand>
+      <Synthetic Name="data">
+        <Expand>
+          <ArrayItems>
+            <Size>_size</Size>
+            <ValuePointer>_data</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+
+  <Type Name="SS::PooledList&lt;*&gt;">
+    <DisplayString>{{ capacity={_capacity} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]">_size</Item>
+      <Synthetic Name="data">
+        <Expand>
+          <ArrayItems>
+            <Size>_size</Size>
+            <ValuePointer>_data</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+
 
 </AutoVisualizer>

@@ -1,7 +1,7 @@
 #include "SSGeometryAssetManager.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 
-SSGeometryAssetManager* SSGeometryAssetManager::_instance = nullptr;
+SSGeometryAssetManager* SSGeometryAssetManager::g_instance = nullptr;
 
 SSGeometryAssetManager::SSGeometryAssetManager(uint32 poolSize)
 {

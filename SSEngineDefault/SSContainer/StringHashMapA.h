@@ -40,7 +40,7 @@ namespace SS {
 
 		uint32 _poolCapacity;
 		uint32 _collisionLimit;
-		const uint64 _seed;
+		uint64 _seed;
 
 
 	public:
@@ -55,6 +55,8 @@ namespace SS {
 
 		EraseResult TryErase(const char* hashString);
 		EraseResult TryErase(const char* hashString, T& outItem);
+
+		bool TryRebuild(uint32 newPoolCapacity, uint32 newCollisionLimit, uint64 Seed);
 
 		T& GetDirectlyAt(const uint32 idx);
 	};
@@ -107,13 +109,13 @@ namespace SS {
 			return InsertResult::CollisionLimit;
 		}
 
-		_strPool[hashValue].Assign(hashString, hashStringLen);
+		_strPool[hashValue].Assign(hashString);
 		new(_dataPool + hashValue) T(item);
 		return InsertResult::Success;
 	}
 
 	template<typename T, uint32 STR_LEN_MAX>
-	inline InsertResult StringHashMapA<T, STR_LEN_MAX>::TryInsert(const char* hashString, const T&& item)
+	InsertResult StringHashMapA<T, STR_LEN_MAX>::TryInsert(const char* hashString, const T&& item)
 	{
 		uint64 hashStringLen = strlen(hashString);
 
@@ -138,7 +140,7 @@ namespace SS {
 			return InsertResult::CollisionLimit;
 		}
 
-		_strPool[hashValue].Assign(hashString, hashStringLen);
+		_strPool[hashValue].Assign(hashString);
 		new(_dataPool + hashValue) T(item);
 		return InsertResult::Success;
 	}
@@ -222,6 +224,51 @@ namespace SS {
 		}
 
 		assert(false);
+	}
+
+	template<typename T, uint32 STR_LEN_MAX>
+	bool StringHashMapA<T, STR_LEN_MAX>::TryRebuild(uint32 newPoolCapacity, uint32 newCollisionLimit, uint64 newSeed)
+	{
+
+		FixedStringA<STR_LEN_MAX>* newStrPool = DBG_NEW FixedStringA<STR_LEN_MAX>[newPoolCapacity];
+		T* newDataPool = (T*)DBG_MALLOC(sizeof(T) * newPoolCapacity);
+
+		for (uint32 i = 0; i < _poolCapacity; i++) {
+
+			if (_strPool[i].GetLen() != 0) {
+	
+				const char* hashString = _strPool[i].GetData();
+				uint32 hashStringLen = _strPool[i].GetLen();				
+
+				uint64 hashValue = CityHash64WithSeed(hashString, hashStringLen, newSeed) % newPoolCapacity;
+				uint64 count = 0;
+
+				while (count < newCollisionLimit && newStrPool[hashValue].GetLen() != 0) {
+					count++;
+					hashValue = (hashValue + 1) % newPoolCapacity;
+				}
+
+				if (count >= newCollisionLimit)
+				{
+					return false;
+				}
+
+				newStrPool[hashValue].Assign(hashString);
+				memcpy(newDataPool + hashValue, _dataPool + i, sizeof(T));
+			}
+		}
+
+		_poolCapacity = newPoolCapacity;
+		_collisionLimit = newCollisionLimit;
+		_seed = newSeed;
+
+		delete _strPool;
+		free(_dataPool);
+
+		_strPool = newStrPool;
+		_dataPool = newDataPool;
+		
+		return true;
 	}
 
 	template<typename T, uint32 STR_LEN_MAX>

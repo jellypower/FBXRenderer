@@ -1,19 +1,31 @@
 #pragma once
 
-#include <Windows.h>
+#include <SSEngineDefault/SSEngineDefault.h>
 #include <fbxsdk.h>
 
+#include "SSEngineDefault/SSContainer/SSUtilityContainer.h"
 
+
+class SSGeometryAsset;
 class SSMaterialAssetManager;
 class SSModelAssetManager;
+class SSModelAsset;
 
 class SSFBXImporter {
+private:
+	::FbxManager* _FBXManager = nullptr;
+	::FbxIOSettings* _IOSetting = nullptr;
+	::FbxImporter* _FBXImporter = nullptr;
+	::FbxScene* _currentScene = nullptr;
+	SS::FixedStringA<PATH_LEN_MAX> _filePath;
 
 public:
 	SSFBXImporter();
 	~SSFBXImporter();
 
-	HRESULT LoadModelAssetFBXFromFile(const char* FileName);
+	HRESULT LoadModelAssetFromFBXFile(const char* filePath);
+	void ClearFBXModelAsset();
+
 	void StoreCurrentFBXModelAssetToAssetManager();
 
 
@@ -22,12 +34,5 @@ private:
 	void TraverseNodesRecursion(fbxsdk::FbxNode* node);
 	void StoreModelToManager(fbxsdk::FbxMesh* InFBXMesh);
 
-
-private:
-	::FbxManager* _FBXManager = nullptr;
-	::FbxIOSettings* _IOSetting = nullptr;
-	::FbxImporter* _FBXImporter = nullptr;
-
-	::FbxScene* _currentScene = nullptr;
-
+	SSGeometryAsset* GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbxMesh);
 };

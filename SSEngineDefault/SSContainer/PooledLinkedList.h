@@ -58,36 +58,22 @@ namespace SS {
 			friend class PooledLinkedList<T>;
 		private:
 			PooledLinkedListNode<T>* _ptr;
+
 		public:
 			iterator& operator++() {
 				_ptr = _ptr->GetNext();
 				return *this;
 			}
-
 			iterator& operator--() {
 				_ptr = _ptr->GetPrev();
 				return *this;
 			}
-
-			bool operator==(const iterator& rhs) const {
-				return _ptr == rhs._ptr;
-			}
-
-			bool operator!=(const iterator& rhs) const {
-				return _ptr != rhs._ptr;
-			}
-
-			T& operator*() {
-				return _ptr->GetDataReference();
-			}
-
-			T* operator->() {
-				return _ptr->GetDataPtr();
-			}
+			bool operator==(const iterator& rhs) const { return _ptr == rhs._ptr; }
+			bool operator!=(const iterator& rhs) const { return _ptr != rhs._ptr; }
+			T& operator*() { return _ptr->GetDataReference(); }
+			T* operator->() { return _ptr->GetDataPtr(); }
 		private:
-			iterator(PooledLinkedListNode<T>* ptr) {
-				_ptr = ptr;
-			}
+			iterator(PooledLinkedListNode<T>* ptr) { _ptr = ptr; }
 		};
 
 	private:
@@ -125,8 +111,6 @@ namespace SS {
 
 		void InsertFront(iterator iter, const T& item);
 		void InsertFront(iterator iter, T&& item);
-
-//		void IncreaseCapacityAndRebuild(uint32 newCapacity);
 
 		iterator Erase(iterator iter) {
 			PooledLinkedListNode<T>* nodeToDelete = iter._ptr;
@@ -367,32 +351,6 @@ namespace SS {
 
 		_size++;
 	}
-
-	/*
-	template<typename T>
-	void SS::PooledLinkedList<T>::IncreaseCapacityAndRebuild(uint32 newCapacity)
-	{
-		if (_capacity > newCapacity)
-			return;
-
-		uint32 prevCapacity = _capacity;
-		_capacity = newCapacity;
-
-		PooledLinkedListNode<T>* newPool = (PooledLinkedListNode<T>*)DBG_MALLOC(sizeof(PooledLinkedListNode<T>) * _capacity);
-		memcpy(newPool, _pool, sizeof(PooledLinkedListNode<T>) * prevCapacity);
-		free(_pool);
-		_pool = newPool;
-
-		PooledLinkedListNode<T>** newUsableAddressStack = DBG_NEW PooledLinkedListNode<T>*[_capacity];
-		memcpy(newUsableAddressStack, _usableAddressStack, sizeof(PooledLinkedListNode<T>*) * prevCapacity);
-		delete _usableAddressStack;
-		_usableAddressStack = newUsableAddressStack;
-
-		for (uint32 i = prevCapacity; i < newCapacity;i++)
-			_usableAddressStack[i] = (_pool + i);
-
-
-	}*/
 
 	template<typename T>
 	void SS::PooledLinkedList<T>::Clear()

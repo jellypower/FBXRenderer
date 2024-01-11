@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <fbxsdk.h>
 
+#include "SSAssetBase.h"
+
 struct SimpleVertex
 {
 	XMFLOAT3 Pos;
@@ -24,8 +26,9 @@ enum class GeometryDrawTopology {
 };
 
 
-class SSGeometryAsset
+class SSGeometryAsset : public SSAssetBase
 {
+	friend class SSFBXImporter;
 private:
 	GeometryDrawTopology _drawTopologyType = GeometryDrawTopology::NONE;
 
@@ -43,6 +46,8 @@ private:
 
 
 public:
+	SSGeometryAsset();
+	virtual ~SSGeometryAsset() override { };
 
 	void ReleaseVertexDataOnSystem();
 	bool UsableOnSystem() { return _vertexData != nullptr; }

@@ -5,6 +5,10 @@
 #include <memory.h>
 
 
+SSGeometryAsset::SSGeometryAsset()
+{
+	_assetType = AssetType::Geometry;
+}
 
 void SSGeometryAsset::ReleaseVertexDataOnSystem()
 {

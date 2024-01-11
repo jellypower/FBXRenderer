@@ -24,6 +24,8 @@ private:
 public:
 
 	SSCamera();
+	virtual ~SSCamera() override = default;
+
 	void UpdateResolutionWithClientRect(ID3D11Device* InDevice, HWND InHwnd);
 	Transform& GetTransform() { return _transform;  }
 

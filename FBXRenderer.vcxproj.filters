@@ -117,6 +117,18 @@
     <ClInclude Include="SSEngineDefault\SSUtilityMacros.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\FixedList.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\PooledList.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\SSNonCopyable.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\SSAssetBase.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">

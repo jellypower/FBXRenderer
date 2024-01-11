@@ -160,11 +160,14 @@
     </ClInclude>
     <ClInclude Include="FBXRenderer.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="SSEngineDefault\SSContainer\FixedList.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\PooledLinkedList.h" />
+    <ClInclude Include="SSEngineDefault\SSContainer\PooledList.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\SSUtilityContainer.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\CityHash.h" />
     <ClInclude Include="SSEngineDefault\SSEngineDefault.h" />
     <ClInclude Include="SSEngineDefault\SSUtilityMacros.h" />
+    <ClInclude Include="SSRenderer\SSAssetBase.h" />
     <ClInclude Include="SSRenderer\SSHierarchyObject.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SSEngineDefault\SSFrameInfo.h" />
@@ -172,6 +175,7 @@
     <ClInclude Include="SSEngineDefault\SSVector.h" />
     <ClInclude Include="SSAsset\SSFBXImporter.h" />
     <ClInclude Include="SSEngineDefault\SSInput.h" />
+    <ClInclude Include="SSRenderer\SSNonCopyable.h" />
     <ClInclude Include="SSRenderer\SSPlaceableObject.h" />
     <ClInclude Include="SSRenderer\SSModelAssetManager.h" />
     <ClInclude Include="SSRenderer\SSModelAsset.h" />

@@ -10,27 +10,19 @@ class SSGeometryAssetManager
 	friend class SSFBXImporter;
 	friend class SSRenderer;
 private:
-	static SSGeometryAssetManager* _instance;
+	SS_DECLARE_AS_SINGLETON(SSGeometryAssetManager);
 
 public:
-	static FORCEINLINE SSGeometryAssetManager* Get() {
-		assert(_instance != nullptr);
-		return _instance;
-	}
-	static FORCEINLINE void Release() {
-		delete _instance;
-		_instance = nullptr;
-	}
-	static FORCEINLINE uint32 GetGeometryPoolCount() { return _instance->_geometryPoolCount; }
-	static SSGeometryAsset* GetGeometryWithIdx(uint32 idx) { return _instance->GeometryList[idx]; }
+	static FORCEINLINE uint32 GetGeometryPoolCount() { return g_instance->_geometryPoolCount; }
+	static SSGeometryAsset* GetGeometryWithIdx(uint32 idx) { return g_instance->GeometryList[idx]; }
 
 private:
 	static FORCEINLINE void Instantiate(uint32 poolSize) {
-		if (_instance != nullptr) {
+		if (g_instance != nullptr) {
 			assert(false);
 			return;
 		}
-		_instance = DBG_NEW SSGeometryAssetManager(poolSize);
+		g_instance = DBG_NEW SSGeometryAssetManager(poolSize);
 	}
 
 

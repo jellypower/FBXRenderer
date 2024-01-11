@@ -51,13 +51,17 @@ public:
 	HRESULT InitShaderManager();
 	HRESULT InitMaterialManager();
 	HRESULT ImportFBXFileToAssetPool();
-	void InitCameraTemp();
 	void CleanUp();
 
-	// HACK: PerFrame µû·Î »©³õ±â
-	void PerFrameTemp();
+
+	void BeginFrame();
+
+	void PerFrame();
+
+private:
 
 
+	void InitCameraTemp();
 
 
 };

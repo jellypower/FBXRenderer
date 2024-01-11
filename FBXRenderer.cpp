@@ -67,6 +67,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 
 	MSG msg = { 0 };
 
+	g_Renderer.BeginFrame();
+
 	while (WM_QUIT != msg.message)
 	{
 		SSFrameInfo::Get()->ProcessPerFrameBeginEventInternal();
@@ -77,7 +79,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 			DispatchMessage(&msg);
 		}
 
-		g_Renderer.PerFrameTemp();
+		g_Renderer.PerFrame();
 
 
 		SSInput::Get()->ProcessInputReset();
@@ -89,10 +91,11 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 	SSFrameInfo::Release();
 	SSInput::Release();
 
+
 #ifdef _DEBUG
 	CheckRemainingObjects();
-	//	_CrtDumpMemoryLeaks();
-	//	_CrtCheckMemory();
+	assert(_CrtDumpMemoryLeaks() == false);
+	assert(_CrtCheckMemory());
 #endif
 	return (int)msg.wParam;
 }

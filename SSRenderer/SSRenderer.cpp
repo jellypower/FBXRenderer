@@ -10,12 +10,23 @@
 #include "SSEngineDefault/SSContainer/StringHashMapA.h"
 #include "SSEngineDefault/SSContainer/SSUtilityContainer.h"
 #include "SSEngineDefault/SSContainer/PooledLinkedList.h"
+#include "SSEngineDefault/SSContainer/FixedList.h"
+
 #include "SSGeometryAssetManager.h"
 #include "SSMaterialAssetManager.h"
 #include "SSTextureManager.h"
 
 #include <vector>
 
+#include "SSEngineDefault/SSContainer/PooledList.h"
+
+
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\a.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Room.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
 
 
 HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
@@ -238,16 +249,6 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		return hr;
 	}
 
-
-
-	InitCameraTemp();
-
-
-	SS_LOG("Log (SSRenderer): Renderer Init finished!\n");
-
-
-
-
 	return S_OK;
 }
 
@@ -302,15 +303,7 @@ HRESULT SSRenderer::ImportFBXFileToAssetPool()
 {
 	HRESULT hr = S_OK;
 
-	hr = _fbxImporter.LoadModelAssetFBXFromFile(
-
-		//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\a.fbx"
-		//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
-		//		"D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
-				"D:\\DirectXWorkspace\\OpenFBX\\runtime\\Room.fbx"
-		//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
-		//		"D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
-	);
+	hr = _fbxImporter.LoadModelAssetFromFBXFile(TEMP_FBX_MODEL_PATH);
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG();
 		return hr;
@@ -330,6 +323,8 @@ void SSRenderer::InitCameraTemp()
 	RenderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - RenderTarget->GetTransform().Position);
 	RenderTarget->SetFOVWithRadians(XM_PIDIV4);
 	RenderTarget->SetNearFarZ(0.01f, 10000.f);
+
+	SS_LOG("Log (SSRenderer): Renderer Init finished!\n");
 }
 
 
@@ -373,7 +368,12 @@ void SSRenderer::CleanUp()
 
 }
 
-void SSRenderer::PerFrameTemp()
+void SSRenderer::BeginFrame()
+{
+	InitCameraTemp();
+}
+
+void SSRenderer::PerFrame()
 {
 	// container example
 	{
@@ -384,17 +384,41 @@ void SSRenderer::PerFrameTemp()
 			sprintf(buffer, "StringIdx%d", i);
 			InsertResult result = hashMap.TryInsert(buffer, buffer);
 		}
+		bool rebuildResult = hashMap.TryRebuild(2048, 10, rand());
 
 		EraseResult result8 = hashMap.TryErase("StringIdx1");
 		SS::FixedStringA<100> outData;
 		FindResult result1 = hashMap.TryFind("StringIdx123", outData);
+		assert(result1 == FindResult::Success );
 		FindResult result2 = hashMap.TryFind("StringIdx12", outData);
+		assert(result2 == FindResult::Success);
 		FindResult result3 = hashMap.TryFind("StringIdx1", outData);
 		FindResult result4 = hashMap.TryFind("StringIdx0", outData);
+		assert(result4 == FindResult::Success);
 		FindResult result5 = hashMap.TryFind("StringIdx78", outData);
+		assert(result5 == FindResult::Success);
 		FindResult result6 = hashMap.TryFind("StringIdx68", outData);
+		assert(result6 == FindResult::Success);
 		FindResult result7 = hashMap.TryFind("StringIdx256", outData);
+		assert(result7 == FindResult::Success);
 
+
+		for (uint32 i = 0; i < 300; i++) {
+			char buffer[100];
+			sprintf(buffer, "ADSASASDASD%d", i);
+			InsertResult result9 = hashMap.TryInsert(buffer, buffer);
+			assert(result9 == InsertResult::Success);
+		}
+
+		bool result = hashMap.TryRebuild(2048, 10, rand());
+
+		for (uint32 i = 0; i < 300; i++) {
+			char buffer[100];
+			sprintf(buffer, "ADSASASDASD%d", i);
+			SS::FixedStringA<100> outStr;
+			FindResult result9 = hashMap.TryFind(buffer, outStr);
+			assert(result9 == FindResult::Success);
+		}
 
 
 		SS::StringHashMapA<std::vector<uint32>> vectorHashMap(1024);
@@ -452,15 +476,46 @@ void SSRenderer::PerFrameTemp()
 		std::vector<uint32> myVector(20);
 		vectorLinkedList.PushBack(myVector);
 
-		vectorLinkedList.IncreaseCapacityAndRebuild(16);
-		vectorLinkedList.PushBack(myVector);
-		vectorLinkedList.PushBack(myVector);
-		vectorLinkedList.PushBack(myVector);
-		vectorLinkedList.PushBack(myVector);
-		vectorLinkedList.PushBack(myVector);
+		
+		SS::FixedList<std::vector<uint32>, 4> vectorList;
+		vectorList.PushBack(std::vector<uint32>(10));
+		vectorList.PushBack(std::vector<uint32>(20));
+		vectorList.PushBack(std::vector<uint32>(30));
+		vectorList.PushBack(std::vector<uint32>(40));
+		
+		for (const std::vector<uint32>& item : vectorList) {
+			printf("\t\tvector list size: %d\n", item.size());
+		}
+
+		vectorList.Resize(2);
+		vectorList.PushBack(std::vector<uint32>(200));
+		for (uint32 i = 0; i < vectorList.GetSize(); i++)
+			vectorList[i].resize(200);
+		vectorList.Clear();
+
+		
+		SS::PooledList<std::vector<uint32>> pooledVectorList(4);
+		pooledVectorList.PushBack(std::vector<uint32>(10));
+		pooledVectorList.PushBack(std::vector<uint32>(30));
+		pooledVectorList.PushBack(std::vector<uint32>(20));
+		pooledVectorList.PushBack(std::vector<uint32>(40));
+
+		for(const std::vector<uint32>& item : pooledVectorList)
+		{
+			printf("\t\tpooled vector list size: %d\n", item.size());
+		}
+
+		pooledVectorList.IncreaseCapacityAndCopy(10);
+		pooledVectorList.Resize(2);
+		pooledVectorList.PushBack(std::vector<uint32>(100));
+
+		for (uint32 i = 0; i < pooledVectorList.GetSize(); i++)
+			printf("\t\tpooled vector list size: %d\n", pooledVectorList[i].size());
+			
+		pooledVectorList.Clear();
+
+
 	}
-
-
 
 	_deviceContext->ClearRenderTargetView(RenderTargetView, Colors::MidnightBlue);
 	_deviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -535,7 +590,7 @@ void SSRenderer::PerFrameTemp()
 	RenderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
 
 
-	SSGeometryAsset* Geometry = SSGeometryAssetManager::GetGeometryWithIdx(0);
+	SSGeometryAsset* Geometry = SSGeometryAssetManager::GetGeometryWithIdx(50);
 	Geometry->SetDrawTopology(GeometryDrawTopology::TRIANGLELIST);
 
 	SSMaterialAsset* Material = SSMaterialAssetManager::Get()->GetMaterialWithIdx(0);
@@ -550,11 +605,11 @@ void SSRenderer::PerFrameTemp()
 		MeshColor.Z = (sinf(SSFrameInfo::GetElapsedTime() * 5.0f) + 1.0f) * 0.5f;
 		MeshColor = Vector4f(1, 1, 1, 1);
 
-		//		Material->UpdateParameter(_deviceContext, 2, &MeshColor, sizeof(Vector4f));
+//		Material->UpdateParameter(_deviceContext, 2, &MeshColor, sizeof(Vector4f));
 
 		XMMATRIX Temp = RenderTarget->GetViewProjMatrix();
 
-		//		Material->UpdateTransform(_deviceContext, XMMatrixTranspose(XMMatrixRotationY(SSFrameInfo::GetElapsedTime())));
+//		Material->UpdateTransform(_deviceContext, XMMatrixTranspose(XMMatrixRotationY(SSFrameInfo::GetElapsedTime())));
 
 		Material->UpdateCameraSetting(_deviceContext, XMMatrixTranspose(RenderTarget->GetViewProjMatrix()));
 	}

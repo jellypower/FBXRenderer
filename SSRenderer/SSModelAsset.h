@@ -13,7 +13,7 @@ enum class ModelAssetInstanceStage {
 
 };
 
-class SSModelAsset : public SSPlaceableObject
+class SSModelAsset
 {
 private:
 	ModelAssetInstanceStage InstanceStage = ModelAssetInstanceStage::JustCreated;
