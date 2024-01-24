@@ -13,11 +13,13 @@ typedef unsigned char			uint8;
 
 typedef unsigned char			byte;
 
+typedef wchar_t					utf16;
+
 constexpr uint32 SS_UINT32_MAX = 0xffffffff;
 
 #define FORCEINLINE __forceinline
 #define PATH_LEN_MAX 260
-#define ASSET_NAME_LEN_MAX 60
+#define ASSET_NAME_LEN_MAX 130
 
 #endif
 
@@ -34,4 +36,4 @@ public:													\
 		delete g_instance;								\
 		g_instance = nullptr;							\
 	}													\
-private:												
+private:

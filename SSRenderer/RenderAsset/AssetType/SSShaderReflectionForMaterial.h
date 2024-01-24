@@ -10,14 +10,17 @@
 
 #define W_TRANSFOMRM_IDX 0
 #define VP_TRANSFORM_IDX 1
+#define MATERIAL_PARAM_START_IDX 2
 
 #define INVALID_SLOT_IDX -1
 #define INVALID_BUFFER_SIZE 0
 #define CONSTANT_BUFFER_NAME_LEN_MAX 59
 
+#define TEXTURE_COUNT_MAX D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT
+
 #include "SSEngineDefault/SSNativeTypes.h"
 
-// Shader Constant Buffer Element's reflection data
+// _shader Constant Buffer Element's reflection data
 struct SSShaderCBReflectionElement { 
 
 	uint16 CBSize = INVALID_BUFFER_SIZE; // 2byte
@@ -30,7 +33,7 @@ struct SSShaderCBReflectionElement {
 
 }; // entirely 48byte
 
-typedef struct _SSShaderReflectionForMaterial {
+struct SSShaderReflectionForMaterial {
 
 	SSShaderCBReflectionElement VSCBReflectionInfo[CONSTANT_BUFFER_COUNT_MAX];
 	uint8 VSConstBufferNum = 0;
@@ -42,7 +45,7 @@ typedef struct _SSShaderReflectionForMaterial {
 	uint8 EntireConstBufferNum = 0;
 	uint8 ConstBufferSlotMax = 0;
 
-	uint8 _texturePoolCount = 0;
+	uint8 TexturePoolCount = 0;
 	uint8 SamplerCount = 0;
 
-} SSShaderReflectionForMaterial;
+};

@@ -16,9 +16,13 @@ namespace SS
 
 	public:
 		PooledList(uint32 capacity);
+		PooledList(const PooledList<T>& origin);
+		PooledList(PooledList<T>&& origin);
 		~PooledList();
 
+		void PushBack(const T& newData);
 		void PushBack(T&& newData);
+
 		void Resize(uint32 newSize);
 		void Clear();
 		void IncreaseCapacityAndCopy(uint32 newCapacity);
@@ -26,14 +30,15 @@ namespace SS
 		FORCEINLINE uint32 GetSize() const { return _size; }
 		FORCEINLINE uint32 GetCapacity() const { return _capacity; }
 
-		FORCEINLINE T& operator[](const uint32 idx);
+		FORCEINLINE T* GetData() { return _data; }
+		FORCEINLINE T& operator[](const uint32 idx)  const;
 
 	public:
 		class iterator {
 			friend class PooledList<T>;
 		private:
 			uint32 _idx;
-			PooledList<T>& _list;
+			const PooledList<T>& _list;
 
 		public:
 			iterator& operator++() {
@@ -41,11 +46,11 @@ namespace SS
 				return *this;
 			}
 			iterator& operator--() {
-				_idx++;
+				_idx--;
 				return *this;
 			}
-			bool operator==(const iterator rhs) { return _idx == rhs._idx; }
-			bool operator!=(const iterator rhs) { return _idx != rhs._idx; }
+			bool operator==(const iterator rhs) const { return _idx == rhs._idx; }
+			bool operator!=(const iterator rhs) const { return _idx != rhs._idx; }
 			T& operator*() { return _list._data[_idx]; }
 
 		private:
@@ -53,8 +58,33 @@ namespace SS
 		};
 		FORCEINLINE iterator begin() { return iterator(0, *this); }
 		FORCEINLINE iterator end() { return iterator(_size, *this); }
-	};
 
+
+		class const_iterator {
+			friend class PooledList<T>;
+		private:
+			uint32 _idx;
+			const PooledList<T>* _list;
+
+		public:
+			const_iterator& operator++() {
+				_idx++;
+				return *this;
+			}
+			const_iterator& operator--() {
+				_idx--;
+				return *this;
+			}
+			bool operator==(const const_iterator rhs) const { return _idx == rhs._idx; }
+			bool operator!=(const const_iterator rhs) const { return _idx != rhs._idx; }
+			const T& operator*() const { return _list->_data[_idx]; }
+
+		private:
+			const_iterator(uint32 idx, const PooledList<T>* list) : _idx(idx), _list(list) { }
+		};
+		FORCEINLINE const_iterator begin() const { return const_iterator(0, this); }
+		FORCEINLINE const_iterator end() const { return const_iterator(_size, this); }
+	};
 	template <typename T>
 	PooledList<T>::PooledList(uint32 capacity)
 	{
@@ -71,6 +101,30 @@ namespace SS
 	}
 
 	template <typename T>
+	PooledList<T>::PooledList(const PooledList<T>& origin)
+	{
+		_size = origin._size;
+		_capacity = origin._capacity;
+		_data = (T*)DBG_MALLOC(sizeof(T) * _capacity);
+
+		for(uint32 i=0;i < _size;i++)
+		{
+			new(_data + _size) T(origin[i]);
+		}
+	}
+
+	template <typename T>
+	PooledList<T>::PooledList(PooledList<T>&& origin)
+	{
+		_size = origin._size;
+		_capacity = origin._capacity;
+		_data = origin._data;
+		origin._data = nullptr;
+		origin._size = 0;
+		origin._capacity = 0;
+	}
+
+	template <typename T>
 	PooledList<T>::~PooledList()
 	{
 		for (uint32 i = 0; i < _size; i++)
@@ -78,6 +132,14 @@ namespace SS
 			_data[i].~T();
 		}
 		free(_data);
+	}
+
+	template <typename T>
+	void PooledList<T>::PushBack(const T& newData)
+	{
+		assert(_size < _capacity);
+		new(_data + _size) T(newData);
+		_size++;
 	}
 
 	template <typename T>
@@ -122,9 +184,10 @@ namespace SS
 	}
 
 	template <typename T>
-	T& PooledList<T>::operator[](const uint32 idx)
+	T& PooledList<T>::operator[](const uint32 idx) const
 	{
 		assert(idx < _capacity);
 		return _data[idx];
 	}
+
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SSEngineDefault/SSNativeTypes.h"
-#include "SSPlaceableObject.h"
 #include "SSStaticMath.h"
 
 #include <d3d11.h>
@@ -11,10 +10,12 @@
 constexpr float CAM_FOV_MIN = 0.01f;
 constexpr float CAM_FOV_MAX = XM_PI * 0.99f;
 
-class SSCamera : public SSPlaceableObject
+class SSCamera
 {
 
 private:
+	Transform _transform;
+
 	RECT ScreenRect = { 0 };
 
 	float FOVRadY = 0;
@@ -24,7 +25,6 @@ private:
 public:
 
 	SSCamera();
-	virtual ~SSCamera() override = default;
 
 	void UpdateResolutionWithClientRect(ID3D11Device* InDevice, HWND InHwnd);
 	Transform& GetTransform() { return _transform;  }

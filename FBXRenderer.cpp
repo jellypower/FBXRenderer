@@ -4,10 +4,8 @@
 
 #include "framework.h"
 #include "FBXRenderer.h"
-#include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSRenderer/SSRenderer.h"
-#include "SSRenderer/SSShaderAssetManager.h"
 
 #include "SSEngineDefault/SSDebugLogger.h"
 #include "SSEngineDefault/SSInput.h"
@@ -82,7 +80,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 		g_Renderer.PerFrame();
 
 
-		SSInput::Get()->ProcessInputReset();
+		SSInput::Get()->ProcessInputEndOfFrame();
 	}
 
 
@@ -197,6 +195,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		EndPaint(hWnd, &ps);
 	}
 	break;
+	case WM_KILLFOCUS:
+		SSInput::Get()->ClearCurInputState();
+		break;
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;

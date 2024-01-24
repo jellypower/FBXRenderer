@@ -55,28 +55,42 @@ class SSInput
 {
 	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	friend int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow);
+public:
+	FORCEINLINE static SSInput* Get();
+	FORCEINLINE static bool GetKey(EKeyCode keyCode) { return _instance->_keyState[static_cast<uint32>(keyCode)]; }
+	FORCEINLINE static bool GetKeyDown(EKeyCode keyCode)
+	{
+		return !_instance->_prevFrameKeyState[static_cast<uint32>(keyCode)] &&
+			_instance->_keyState[static_cast<uint32>(keyCode)];
+	}
+	FORCEINLINE static bool GetKeyUp(EKeyCode keyCode)
+	{
+		return _instance->_prevFrameKeyState[static_cast<uint32>(keyCode)] &&
+			!_instance->_keyState[static_cast<uint32>(keyCode)];
+	}
+	FORCEINLINE static bool GetMouse(EMouseCode mouseCode) { return _instance->_mouseState[static_cast<uint32>(mouseCode)]; }
+	FORCEINLINE static Vector2f GetMouseDelta() { return _instance->GetMouseDeltaInternal(); }
+
+
+
 private:
 	static SSInput* _instance;
+	bool _prevFrameKeyState[static_cast<int32>(EKeyCode::Count)];
 	bool _keyState[static_cast<int32>(EKeyCode::Count)];
+	bool _prevFrameMouseState[static_cast<int32>(EMouseCode::Count)];
 	bool _mouseState[static_cast<int32>(EMouseCode::Count)];
 
 	Vector2i32 _mousePos;
 	Vector2i32 _mouseDelta;
 
 
-	
-
-public:
-	FORCEINLINE static SSInput* Get();
-	FORCEINLINE static bool GetKey(EKeyCode keyCode) { return _instance->_keyState[static_cast<uint32>(keyCode)]; }
-	FORCEINLINE static bool GetMouse(EMouseCode mouseCode) { return _instance->_mouseState[static_cast<uint32>(mouseCode)]; }
-	FORCEINLINE static Vector2f GetMouseDelta() { return _instance->GetMouseDeltaInternal(); }
 private:
 	SSInput();
 
 	FORCEINLINE static void Release();
 
-	void ProcessInputReset();
+	void ClearCurInputState();
+	void ProcessInputEndOfFrame();
 	void ProcessInputEventForWindowsInternal(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	Vector2f GetMouseDeltaInternal();
 };
@@ -88,14 +102,7 @@ FORCEINLINE SSInput* SSInput::Get() {
 	return _instance;
 }
 
-inline SSInput::SSInput()
-{
-	for (uint32 i = 0; i < static_cast<uint32>(EKeyCode::Count); i++)
-		_keyState[i] = false;
 
-	for (uint32 i = 0; i < static_cast<uint32>(EMouseCode::Count); i++)
-		_mouseState[i] = false;
-}
 
 FORCEINLINE void SSInput::Release() {
 	delete _instance;

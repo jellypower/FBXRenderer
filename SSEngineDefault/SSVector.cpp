@@ -49,6 +49,16 @@ Vector2ui32::Vector2ui32(uint32 InX, uint32 InY)
 {
 }
 
+Transform::Transform()
+	: Position(), Rotation(), Scale(1,1,1,0)
+{
+}
+
+Transform::Transform(Vector4f InPos, Quaternion InRot, Vector4f InScale)
+	: Position(InPos), Rotation(InRot), Scale(InScale)
+{
+}
+
 Vector2f::Vector2f()
 	: X(0), Y(0)
 {
@@ -73,6 +83,7 @@ Quaternion::Quaternion(__m128 InSimdVector)
 
 Quaternion Quaternion::FromEulerRotation(Vector4f eulerRotation)
 {
+//	<Pitch, Yaw, Roll, 0>
 	return XMQuaternionRotationRollPitchYawFromVector(eulerRotation.SimdVec);
 }
 

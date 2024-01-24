@@ -5,6 +5,13 @@
 
 SSInput* SSInput::_instance = nullptr;
 
+SSInput::SSInput()
+{
+	memset(_prevFrameKeyState, 0, sizeof(_prevFrameKeyState));
+	memset(_keyState, 0, sizeof(_keyState));
+	memset(_prevFrameMouseState, 0, sizeof(_prevFrameMouseState));
+	memset(_mouseState, 0, sizeof(_mouseState));
+}
 
 EKeyCode WindowsVKCodeToSSKeyCode(WPARAM wParam)
 {
@@ -18,6 +25,8 @@ EKeyCode WindowsVKCodeToSSKeyCode(WPARAM wParam)
 	case 'S': return EKeyCode::KEY_S;
 	case 'W': return EKeyCode::KEY_W;
 	case 'Z': return EKeyCode::KEY_Z;
+	case 'M': return EKeyCode::KEY_M;
+	case 'N': return EKeyCode::KEY_N;
 
 	case VK_UP: return EKeyCode::KEY_UP;
 	case VK_DOWN: return EKeyCode::KEY_DOWN;
@@ -95,9 +104,17 @@ void SSInput::ProcessInputEventForWindowsInternal(HWND hWnd, UINT message, WPARA
 }
 
 
-void SSInput::ProcessInputReset()
+ void SSInput::ClearCurInputState()
+ {
+	 memset(_keyState, 0, sizeof(_keyState));
+	 memset(_mouseState, 0, sizeof(_mouseState));
+ }
+
+void SSInput::ProcessInputEndOfFrame()
 {
 	_mouseDelta = Vector2i32::Zero;
+	memcpy(_prevFrameKeyState, _keyState, sizeof(_keyState));
+	memcpy(_prevFrameMouseState, _mouseState, sizeof(_prevFrameMouseState));
 }
 
 

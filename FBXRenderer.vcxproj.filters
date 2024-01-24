@@ -39,22 +39,22 @@
     <ClInclude Include="ExternalUtils\ExternalUtils.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSShaderAssetManager.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSShaderAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSShaderAsset.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSShaderAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="ExternalUtils\DDSTextureLoader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSMaterialAsset.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSMaterialAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSTextureManager.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSTextureManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSCamera.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSCamera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SSEngineDefault\SSVector.h">
@@ -63,25 +63,25 @@
     <ClInclude Include="SSStaticMath.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSMaterialAssetManager.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSMaterialAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSGeometryAsset.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSGeometryAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSGeometryAssetManager.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSGeometryAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSShaderReflectionForMaterial.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSShaderReflectionForMaterial.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSAsset\SSFBXImporter.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSFBXImporter.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSModelAsset.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSModelAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSModelAssetManager.h">
+    <ClInclude Include="SSRenderer\RenderAsset\SSModelAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SSEngineDefault\SSInput.h">
@@ -93,10 +93,10 @@
     <ClInclude Include="SSEngineDefault\SSNativeKeywords.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSPlaceableObject.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSPlaceableAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSHierarchyObject.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSHierarchyAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="SSEngineDefault\SSContainer\StringHashMapA.h">
@@ -123,10 +123,16 @@
     <ClInclude Include="SSEngineDefault\SSContainer\PooledList.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSNonCopyable.h">
+    <ClInclude Include="SSEngineDefault\SSNonCopyable.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\SSAssetBase.h">
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSAssetBase.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSModelCombinationAsset.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -143,22 +149,22 @@
     <ClCompile Include="ExternalUtils\ExternalUtils.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSShaderAssetManager.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSShaderAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSShaderAsset.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSShaderAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="ExternalUtils\DDSTextureLoader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSMaterialAsset.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSMaterialAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSTextureManager.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSTextureManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSCamera.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSCamera.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSEngineDefault\SSVector.cpp">
@@ -167,22 +173,22 @@
     <ClCompile Include="SSStaticMath.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSMaterialAssetManager.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSMaterialAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSGeometryAsset.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSGeometryAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSGeometryAssetManager.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSGeometryAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSAsset\SSFBXImporter.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSFBXImporter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSModelAsset.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSModelAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSModelAssetManager.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\SSModelAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSEngineDefault\SSInput.cpp">
@@ -191,13 +197,22 @@
     <ClCompile Include="SSEngineDefault\SSFrameInfo.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSPlaceableObject.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSPlaceableAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="SSRenderer\SSHierarchyObject.cpp">
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSHierarchyAsset.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSEngineDefault\SSContainer\CityHash.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSModelCombinationAsset.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSAssetBase.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

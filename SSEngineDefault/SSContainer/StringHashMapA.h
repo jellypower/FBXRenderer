@@ -56,6 +56,10 @@ namespace SS {
 		EraseResult TryErase(const char* hashString);
 		EraseResult TryErase(const char* hashString, T& outItem);
 
+		FORCEINLINE uint32 GetCapacity() const { return _poolCapacity; }
+		FORCEINLINE uint32 GetCollisionLimit() const { return _collisionLimit; }
+		FORCEINLINE uint64 GetSeed() const { return _seed; }
+
 		bool TryRebuild(uint32 newPoolCapacity, uint32 newCollisionLimit, uint64 Seed);
 
 		T& GetDirectlyAt(const uint32 idx);

@@ -1,9 +1,14 @@
-
 #include "SSFBXImporter.h"
-#include "SSEngineDefault/SSDebugLogger.h"
-#include "SSRenderer/SSMaterialAssetManager.h"
-#include "SSRenderer/SSGeometryAssetManager.h"
 
+#include <fbxsdk/core/fbxsystemunit.h>
+
+#include "SSEngineDefault/SSDebugLogger.h"
+#include "SSMaterialAssetManager.h"
+#include "SSGeometryAssetManager.h"
+#include "SSModelAssetManager.h"
+#include "SSModelCombinationAssetManager.h"
+#include "SSStaticMath.h"
+#include "AssetType/SSModelCombinationAsset.h"
 
 
 
@@ -11,7 +16,8 @@ SSFBXImporter::SSFBXImporter()
 {
 	_FBXManager = ::FbxManager::Create();
 	_IOSetting = FbxIOSettings::Create(_FBXManager, IOSROOT);
-	_FBXImporter = fbxsdk::FbxImporter::Create(_FBXManager, "");
+	_FBXImporter = ::FbxImporter::Create(_FBXManager, "");
+
 
 	_IOSetting->SetBoolProp(IMP_FBX_MATERIAL, true);
 	_FBXManager->SetIOSettings(_IOSetting);
@@ -28,6 +34,7 @@ SSFBXImporter::~SSFBXImporter()
 HRESULT SSFBXImporter::LoadModelAssetFromFBXFile(const char* filePath)
 {
 
+
 	if (!_FBXImporter->Initialize(filePath, -1, _FBXManager->GetIOSettings())) {
 		SS_CLASS_WARNING_LOG("%s", _FBXImporter->GetStatus().GetErrorString());
 		return E_FAIL;
@@ -35,7 +42,16 @@ HRESULT SSFBXImporter::LoadModelAssetFromFBXFile(const char* filePath)
 
 	_currentScene = FbxScene::Create(_FBXManager, filePath);
 	_FBXImporter->Import(_currentScene);
-	_filePath = filePath;
+
+	const FbxSystemUnit meterUnit(100);
+	constexpr FbxSystemUnit::ConversionOptions conversionOptions
+		= { true, true, true, true, true, true };
+	meterUnit.ConvertScene(_currentScene, conversionOptions);
+
+
+	const char* fileNameStart = strrchr(filePath, '\\');
+	_fileName = fileNameStart + 1;
+	_filePath = _FBXImporter->GetFileName().Buffer();
 
 	return S_OK;
 
@@ -45,6 +61,7 @@ void SSFBXImporter::ClearFBXModelAsset()
 {
 	_currentScene->Destroy();
 	_currentScene = nullptr;
+	_fileName.Clear();
 	_filePath.Clear();
 }
 
@@ -61,39 +78,122 @@ void SSFBXImporter::TraverseNodes()
 		return;
 	}
 
-	FbxNode* rootNode = _currentScene->GetRootNode();
 
-	TraverseNodesRecursion(rootNode);
-	
+	FbxNode* rootNode = _currentScene->GetRootNode();
+	uint32 childCount = rootNode->GetChildCount();
+
+
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> assetName;
+	assetName = _fileName;
+	assetName += "_";
+	assetName += ".mdlc";
+	SSModelCombinationAsset* newModelCombAsset = new SSModelCombinationAsset(assetName, (SSModelAsset*)nullptr, childCount);
+
+
+	for (uint32 i = 0; i < rootNode->GetChildCount(); i++) {
+		TraverseNodesRecursion(rootNode->GetChild(i), newModelCombAsset);
+	}
+
+	SSModelCombinationAssetManager::Get()->InsertNewAsset(newModelCombAsset);
 }
 
-void SSFBXImporter::TraverseNodesRecursion(fbxsdk::FbxNode* node)
+void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset)
 {
+	uint32 childCount = node->GetChildCount();
+	SSPlaceableAsset* thisAsset = nullptr;
+
 	if (node->GetNodeAttribute() != nullptr) {
 		switch (node->GetNodeAttribute()->GetAttributeType())
-		{	
+		{
 		case FbxNodeAttribute::eMesh:
-			fbxsdk::FbxMesh* Mesh = node->GetMesh();
+		{
+			// geometry asset creation
+			FbxMesh* fbxMesh = node->GetMesh();
+			SSGeometryAsset* newGeometry = GenerateGeometryFromFbxMesh(fbxMesh);
 
-			StoreModelToManager(Mesh);
-			
-			SS_LOG("\t%d\n", Mesh->GetLayerCount());
-		
+			// model asset creation
+			SS::FixedStringA<ASSET_NAME_LEN_MAX> assetName;
+			assetName += _fileName;
+			assetName += "_";
+			assetName += fbxMesh->GetNode()->GetName();
+			assetName += ".mdl";
+			SSModelAsset* newModel = DBG_NEW SSModelAsset(assetName, newGeometry, SSMaterialAssetManager::GetAssetWithIdx(0));
+
+			// model combination asset creation
+			assetName = fbxMesh->GetNode()->GetName();
+			SSModelCombinationAsset* newModelCombAsset;
+			thisAsset = newModelCombAsset = DBG_NEW SSModelCombinationAsset(assetName, newModel, childCount);
+
+			newModelCombAsset->_modelAsset = newModel;
+
+			SSGeometryAssetManager::Get()->InsertNewGeometry(newGeometry);
+			SSModelAssetManager::Get()->InsertNewModel(newModel);
 		}
+		break;
+		default:
+		{
+			thisAsset = DBG_NEW SSPlaceableAsset(AssetType::Blank, childCount);
+		}
+		break;
+		}
+
+
 	}
 
-	for (int i = 0; i < node->GetChildCount(); i++) {
-		TraverseNodesRecursion(node->GetChild(i));
+	if (thisAsset == nullptr)
+		thisAsset = DBG_NEW SSPlaceableAsset(AssetType::Blank, childCount);
+
+
+	FbxAMatrix fbxMat;
+	fbxMat.SetIdentity();
+	fbxMat.SetT(node->GetGeometricTranslation(FbxNode::eSourcePivot));
+	fbxMat.SetR(node->GetGeometricRotation(FbxNode::eSourcePivot));
+	fbxMat.SetS(node->GetGeometricScaling(FbxNode::eSourcePivot));
+
+	fbxMat = node->EvaluateLocalTransform() * fbxMat;
+
+
+	SS_ASSERT(thisAsset != nullptr);
+	const FbxDouble3 fbxTranslate = fbxMat.GetT();
+	thisAsset->_transform.Position.X = -fbxTranslate.mData[0];
+	thisAsset->_transform.Position.Y = fbxTranslate.mData[1];
+	thisAsset->_transform.Position.Z = fbxTranslate.mData[2];
+	thisAsset->_transform.Position.W = 0;
+
+	const FbxDouble3 fbxScale = fbxMat.GetS();
+	thisAsset->_transform.Scale.X = fbxScale.mData[0];
+	thisAsset->_transform.Scale.Y = fbxScale.mData[1];
+	thisAsset->_transform.Scale.Z = fbxScale.mData[2];
+	thisAsset->_transform.Scale.W = 0;
+
+	const FbxDouble3 fbxRotation = fbxMat.GetR(); // pitch roll yaw
+	SS_LOG("Rotation: %f %f %f\n", fbxRotation.mData[0], fbxRotation.mData[1], fbxRotation.mData[2]);
+	//	FbxDouble3 fbxRotation(0, 0, 0);
+
+	Quaternion curRotation;
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Right, SSStaticMath::DegToRadians(fbxRotation.mData[0]));
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Up, -SSStaticMath::DegToRadians(fbxRotation.mData[1]));
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Forward, -SSStaticMath::DegToRadians(fbxRotation.mData[2]));
+
+
+
+	thisAsset->_transform.Rotation = curRotation;
+
+	SS_LOG("Name: %s\n", node->GetName());
+	SS_LOG("Position: %f %f %f %f\n", thisAsset->_transform.Position.X, thisAsset->_transform.Position.Y, thisAsset->_transform.Position.Z, thisAsset->_transform.Position.W);
+	SS_LOG("Rotation: %f %f %f %f\n", thisAsset->_transform.Rotation.X, thisAsset->_transform.Rotation.Y, thisAsset->_transform.Rotation.Z, thisAsset->_transform.Rotation.W);
+	SS_LOG("Scale: %f %f %f %f\n\n", thisAsset->_transform.Scale.X, thisAsset->_transform.Scale.Y, thisAsset->_transform.Scale.Z, thisAsset->_transform.Scale.W);
+
+	thisAsset->_parent = parentAsset;
+	parentAsset->_childs.PushBack(thisAsset);
+	for (uint32 i = 0; i < childCount; i++) {
+		TraverseNodesRecursion(node->GetChild(i), thisAsset);
 	}
 }
 
-void SSFBXImporter::StoreModelToManager(fbxsdk::FbxMesh* InFBXMesh)
-{
-	SSGeometryAssetManager::Get()->InstantiateNewGeometry(InFBXMesh);
-	
-}
 
-SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbxMesh)
+
+SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 {
 	assert(fbxMesh != nullptr);
 	SSGeometryAsset* NewGeometryAsset = DBG_NEW SSGeometryAsset();
@@ -104,8 +204,9 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 	const int PolygonNum = fbxMesh->GetPolygonCount();
 	const int PolygonVertexNum = fbxMesh->GetPolygonVertexCount(); // sum of vertex in each polygon
 	const FbxGeometryElementNormal* const FbxNormal = fbxMesh->GetElementNormal();
-
+	
 	assert(FbxNormal != nullptr);
+	NewGeometryAsset->_drawTopologyType = GeometryDrawTopology::TRIANGLELIST;
 
 	// 2. alloc vertex memory
 	switch (FbxNormal->GetMappingMode()) {
@@ -133,12 +234,12 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 		TriangleNumInModel += (fbxMesh->GetPolygonSize(i) - 2);
 	}
 
-	NewGeometryAsset->_eachIndexDataSize = sizeof(uint16);
+	NewGeometryAsset->_eachIndexDataSize = sizeof(uint32);
 	NewGeometryAsset->_indexDataNum = TriangleNumInModel * VERTEX_NUM_IN_A_TRIANGLE;
 	NewGeometryAsset->_indexDataSize = NewGeometryAsset->_eachIndexDataSize * NewGeometryAsset->_indexDataNum;
 	NewGeometryAsset->_indexData = DBG_MALLOC(NewGeometryAsset->_indexDataSize);
 
-	uint16* IndexData16 = (uint16*)NewGeometryAsset->_indexData;
+	uint32* IndexData32 = (uint32*)NewGeometryAsset->_indexData;
 	uint32 CurIndexDataIdx = 0;
 
 
@@ -151,7 +252,7 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 	case FbxLayerElement::eByControlPoint:
 
 		for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
-			phVertices[i].Pos.X = ControlPoints[i].mData[0];
+			phVertices[i].Pos.X = -ControlPoints[i].mData[0];
 			phVertices[i].Pos.Y = ControlPoints[i].mData[1];
 			phVertices[i].Pos.Z = ControlPoints[i].mData[2];
 			phVertices[i].Pos.W = ControlPoints[i].mData[3];
@@ -161,46 +262,48 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 			for (uint32 j = 1; j < fbxMesh->GetPolygonSize(i) - 1; j++) {
 				// Vertex를 fbx의 control point 그대로 저장하고 있음.
 				// 내가 중복저장한 Vertex의 위치와 원본의 Vertex가 같음
-				IndexData16[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, 0);
-				IndexData16[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, j);
-				IndexData16[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, j + 1);
+				IndexData32[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, j + 1);
+				IndexData32[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, j);
+				IndexData32[CurIndexDataIdx++] = fbxMesh->GetPolygonVertex(i, 0);
 			}
 		}
 		assert(NewGeometryAsset->_indexDataNum == CurIndexDataIdx);
 
 		break;
 	case FbxLayerElement::eByPolygonVertex:
+	{
+		uint32 fbxMeshPolygonCount = fbxMesh->GetPolygonCount();
 
-		for (int32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
-			for (int32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
+		for (int32 i = 0; i < fbxMeshPolygonCount; i++) {
+			uint32 thisPolygonVerticesCount = fbxMesh->GetPolygonSize(i);
+			for (int32 j = 0; j < thisPolygonVerticesCount; j++) {
 				int32 ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
 
-				phVertices[VertexIdxCounter].Pos.X = ControlPoints[ControlPointIdx].mData[0];
+				phVertices[VertexIdxCounter].Pos.X = -ControlPoints[ControlPointIdx].mData[0];
 				phVertices[VertexIdxCounter].Pos.Y = ControlPoints[ControlPointIdx].mData[1];
 				phVertices[VertexIdxCounter].Pos.Z = ControlPoints[ControlPointIdx].mData[2];
 				phVertices[VertexIdxCounter].Pos.W = ControlPoints[ControlPointIdx].mData[3];
-				VertexIdxCounter++;
 
+				VertexIdxCounter++;
 			}
 		}
 		assert(VertexIdxCounter == PolygonVertexNum);
+
 		VertexIdxCounter = 0;
-
-		for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
-			for (uint32 j = 1; j < fbxMesh->GetPolygonSize(i) - 1; j++) {
-				// Vertex를 중복저장해야 하고 있음. 
+		for (uint32 i = 0; i < fbxMeshPolygonCount; i++) {
+			uint32 eachPolygonVerticesCount = fbxMesh->GetPolygonSize(i);
+			for (uint32 j = 1; j < eachPolygonVerticesCount - 1; j++) {
+				// Vertex를 중복저장해야 하고 있음.
 				// 내가 중복저장한 Vertex의 위치와 원본의 Vertex의 위치가 다름
-				IndexData16[CurIndexDataIdx++] = VertexIdxCounter;
-				IndexData16[CurIndexDataIdx++] = VertexIdxCounter + j;
-				IndexData16[CurIndexDataIdx++] = VertexIdxCounter + j + 1;
-
-
+				IndexData32[CurIndexDataIdx++] = VertexIdxCounter + j + 1;
+				IndexData32[CurIndexDataIdx++] = VertexIdxCounter + j;
+				IndexData32[CurIndexDataIdx++] = VertexIdxCounter;
 			}
-			VertexIdxCounter += fbxMesh->GetPolygonSize(i);
+			VertexIdxCounter += eachPolygonVerticesCount;
 		}
 		assert(NewGeometryAsset->_indexDataNum == CurIndexDataIdx);
-
-		break;
+	}
+	break;
 	default:
 		free(NewGeometryAsset->_indexData);
 		free(NewGeometryAsset->_vertexData);
@@ -212,15 +315,17 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 	switch (FbxNormal->GetMappingMode()) {
 	case FbxLayerElement::EMappingMode::eByControlPoint:
 
-
 		switch (FbxNormal->GetReferenceMode()) {
 		case FbxLayerElement::EReferenceMode::eDirect:
 
 			for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
-				phVertices[i].Normal.X = FbxNormal->GetDirectArray().GetAt(i).mData[0];
-				phVertices[i].Normal.Y = FbxNormal->GetDirectArray().GetAt(i).mData[1];
-				phVertices[i].Normal.Z = FbxNormal->GetDirectArray().GetAt(i).mData[2];
-				phVertices[i].Normal.W = FbxNormal->GetDirectArray().GetAt(i).mData[3];
+				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(i);
+				normalVector.Normalize();
+
+				phVertices[i].Normal.X = -normalVector.mData[0];
+				phVertices[i].Normal.Y = normalVector.mData[1];
+				phVertices[i].Normal.Z = normalVector.mData[2];
+				phVertices[i].Normal.W = normalVector.mData[3];
 			}
 
 			break;
@@ -230,11 +335,12 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 
 			for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
 				int32 FbxNormalIdx = FbxNormal->GetIndexArray().GetAt(i);
+				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx);
 
-				phVertices[i].Normal.X = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[0];
-				phVertices[i].Normal.Y = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[1];
-				phVertices[i].Normal.Z = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[2];
-				phVertices[i].Normal.W = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[3];
+				phVertices[i].Normal.X = -normalVector.mData[0];
+				phVertices[i].Normal.Y = normalVector.mData[1];
+				phVertices[i].Normal.Z = normalVector.mData[2];
+				phVertices[i].Normal.W = normalVector.mData[3];
 			}
 
 			break;
@@ -265,12 +371,12 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 
 			for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
 				for (uint32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
-					int32 ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
-
-					phVertices[VertexIdxCounter].Normal.X = FbxNormal->GetDirectArray().GetAt(VertexIdxCounter).mData[0];
-					phVertices[VertexIdxCounter].Normal.Y = FbxNormal->GetDirectArray().GetAt(VertexIdxCounter).mData[1];
-					phVertices[VertexIdxCounter].Normal.Z = FbxNormal->GetDirectArray().GetAt(VertexIdxCounter).mData[2];
-					phVertices[VertexIdxCounter].Normal.W = FbxNormal->GetDirectArray().GetAt(VertexIdxCounter).mData[3];
+					FbxVector4 normalVector =  FbxNormal->GetDirectArray().GetAt(VertexIdxCounter);
+					normalVector.Normalize();
+					phVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					phVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					phVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					phVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
 
 					VertexIdxCounter++;
 				}
@@ -285,11 +391,12 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 			for (int32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
 				for (int32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
 					int32 FbxNormalIdx = FbxNormal->GetIndexArray().GetAt(VertexIdxCounter);
+					FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx);
 
-					phVertices[VertexIdxCounter].Normal.X = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[0];
-					phVertices[VertexIdxCounter].Normal.Y = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[1];
-					phVertices[VertexIdxCounter].Normal.Z = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[2];
-					phVertices[VertexIdxCounter].Normal.W = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx).mData[3];
+					phVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					phVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					phVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					phVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
 
 					VertexIdxCounter++;
 				}
@@ -312,7 +419,7 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 		return nullptr;
 	}
 
-	// 6. Load Color
+	// 6. Load UV
 	FbxGeometryElementVertexColor* FbxColor = fbxMesh->GetElementVertexColor();
 	if (FbxColor != nullptr) {
 		switch (FbxColor->GetMappingMode()) {
@@ -324,16 +431,13 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbx
 	uint32 vetexDataNum = NewGeometryAsset->_vertexDataNum;
 	for (uint32 i = 0; i < vetexDataNum; i++) {
 
-		phVertices[i].Color = Vector4f(1, 1, 1, 1);
-		phVertices[i].Color = Vector4f(1, 1, 1, 1);
-		phVertices[i].Color = Vector4f(1, 1, 1, 1);
-		phVertices[i].Color = Vector4f(1, 1, 1, 1);
 	}
-	
-	NewGeometryAsset->_assetPath = _filePath;
-	NewGeometryAsset->_assetName = _FBXImporter->GetFileName().Buffer();
+
+	NewGeometryAsset->_assetPath = _FBXImporter->GetFileName().Buffer();
+	NewGeometryAsset->_assetName = _fileName.GetData();
+	NewGeometryAsset->_assetName += "_";
 	NewGeometryAsset->_assetName += fbxMesh->GetNode()->GetName();
+	NewGeometryAsset->_assetName += ".geom";
 
 	return NewGeometryAsset;
 }
-

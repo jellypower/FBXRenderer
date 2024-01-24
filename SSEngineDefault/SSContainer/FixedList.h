@@ -23,6 +23,7 @@ namespace SS {
 
 		FORCEINLINE uint32 GetSize() const { return _size; }
 		constexpr uint32 GetCapacity() { return CAPACITY; }
+		FORCEINLINE T* GetData() { return _data; }
 
 		FORCEINLINE T& operator[](const uint32 idx);
 
@@ -49,8 +50,8 @@ namespace SS {
 		private:
 			iterator(uint32 idx, FixedList<T, CAPACITY>& list) : _idx(idx), _list(list) { }
 		};
-		FORCEINLINE iterator begin() { return iterator(0, *this); }
-		FORCEINLINE iterator end() { return iterator(_size, *this); }
+		FORCEINLINE iterator const begin() { return iterator(0, *this); }
+		FORCEINLINE iterator const end() { return iterator(_size, *this); }
 	};
 
 

@@ -3,6 +3,7 @@
 #include <SSEngineDefault/SSEngineDefault.h>
 #include <fbxsdk.h>
 
+#include "AssetType/SSAssetBase.h"
 #include "SSEngineDefault/SSContainer/SSUtilityContainer.h"
 
 
@@ -10,6 +11,7 @@ class SSGeometryAsset;
 class SSMaterialAssetManager;
 class SSModelAssetManager;
 class SSModelAsset;
+class SSPlaceableAsset;
 
 class SSFBXImporter {
 private:
@@ -17,6 +19,7 @@ private:
 	::FbxIOSettings* _IOSetting = nullptr;
 	::FbxImporter* _FBXImporter = nullptr;
 	::FbxScene* _currentScene = nullptr;
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> _fileName;
 	SS::FixedStringA<PATH_LEN_MAX> _filePath;
 
 public:
@@ -31,8 +34,8 @@ public:
 
 private:
 	void TraverseNodes();
-	void TraverseNodesRecursion(fbxsdk::FbxNode* node);
-	void StoreModelToManager(fbxsdk::FbxMesh* InFBXMesh);
+	void TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset);
 
-	SSGeometryAsset* GenerateGeometryFromFbxMesh(fbxsdk::FbxMesh* fbxMesh);
+	SSGeometryAsset* GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh);
+
 };

@@ -2,6 +2,7 @@
 
 
 SSCamera::SSCamera()
+	: _transform()
 {
 	_transform.Position = Vector4f(0,0,-1,0);
 }

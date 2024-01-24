@@ -17,5 +17,5 @@ inline float SSStaticMath::RadToDegrees(float InRad)
 
 inline float SSStaticMath::DegToRadians(float InDeg)
 {
-	return InDeg / 180 * XM_PI;
+	return InDeg / 180.f * XM_PI;
 }

@@ -3,6 +3,7 @@
 
 #ifdef _WINDOWS
 #include<assert.h>
+#include<tchar.h>
 #include<intrin.h>
 #include<dxgidebug.h>
 
@@ -18,9 +19,17 @@
 
 #define __CLASS__ (typeid(*this).name())
 
-#define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__); __debugbreak();
-#define WSS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__); __debugbreak();
+#define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__), __debugbreak()
+#define WSS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__), __debugbreak()
 #define SS_CLASS_WARNING_LOG(STR, ...) printf_s("Warning(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__, __VA_ARGS__)
+
+#define SS_ASSERT(EXPRESSION, MESSAGE, ...) (void)(				\
+			(!!(EXPRESSION)) ||									\
+			(SS_CLASS_ERR_LOG(MESSAGE, __VA_ARGS__), 0))
+
+#define WASSERT_WITH_MESSAGE(EXPRESSION, MESSAGE) (void)(										\
+            (!!(EXPRESSION)) ||                                                                 \
+            (_wassert((L##MESSAGE), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0))
 
 #include <crtdbg.h>
 #define _CRTDBG_MAP_ALLOC
@@ -37,6 +46,8 @@
 #define __CLASS__ 
 #define SS_CLASS_ERR_LOG(...)
 #define SS_CLASS_WARNING_LOG(...)
+
+#define SS_ASSERT_WITH_MESSAGE(...)
 
 #define WSS_CLASS_ERR_LOG(...)
 

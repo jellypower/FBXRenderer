@@ -1,32 +1,38 @@
 
 #include "SSRenderer.h"
 
-#include "SSCamera.h"
+#include "RenderAsset/AssetType/SSCamera.h"
 #include "../ExternalUtils/ExternalUtils.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 #include "SSEngineDefault/SSInput.h"
 #include "SSEngineDefault/SSFrameInfo.h"
 
 #include "SSEngineDefault/SSContainer/StringHashMapA.h"
-#include "SSEngineDefault/SSContainer/SSUtilityContainer.h"
-#include "SSEngineDefault/SSContainer/PooledLinkedList.h"
-#include "SSEngineDefault/SSContainer/FixedList.h"
 
-#include "SSGeometryAssetManager.h"
-#include "SSMaterialAssetManager.h"
-#include "SSTextureManager.h"
+#include "RenderAsset/SSModelAssetManager.h"
+#include "RenderAsset/SSShaderAssetManager.h"
+#include "RenderAsset/SSGeometryAssetManager.h"
+#include "RenderAsset/SSMaterialAssetManager.h"
+#include "RenderAsset/SSTextureManager.h"
+
 
 #include <vector>
 
-#include "SSEngineDefault/SSContainer/PooledList.h"
+#include "RenderAsset/SSModelCombinationAssetManager.h"
 
 
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\a.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\c.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Room.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
+//#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+
+#define TEMP_MDLC_NAME "rp_nathan_animated_003_walking.fbx"
+#define TEMP_MDL_NAME "PSController.fbx_PS4 Controller.mdl"
 
 
 HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
@@ -50,7 +56,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	{
 		D3D_DRIVER_TYPE_HARDWARE
 	};
-	uint32 numDriverTypes = ARRAYSIZE(driverTypes);
+	uint8 numDriverTypes = ARRAYSIZE(driverTypes);
 
 	D3D_FEATURE_LEVEL featureLevels[] =
 	{
@@ -228,13 +234,17 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		return hr;
 	}
 
-	hr = InitMaterialManager();
-	if (FAILED(hr)) {
-		SS_CLASS_ERR_LOG("Material Manager Init failed.");
-		return hr;
+	SSMaterialAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+	SSMaterialAssetManager::Get()->CreateTempMaterials(D3DDevice);
+	{
+		SSMaterialAsset* mat = SSMaterialAssetManager::GetAssetWithIdx(0);
+		mat->UpdateTransformGPUBuffer(_deviceContext, Transform());
 	}
 
-	SSGeometryAssetManager::Instantiate(100);
+	SSGeometryAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+	SSModelAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+	SSModelCombinationAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+
 
 	hr = ImportFBXFileToAssetPool();
 	if (FAILED(hr)) {
@@ -255,7 +265,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 HRESULT SSRenderer::InitShaderManager()
 {
 
-	SSShaderAssetManager::Instantiate(100);
+	SSShaderAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 	SSShaderAssetManager::Get()->LoadNewShaderTemp();
 	HRESULT hr = SSShaderAssetManager::Get()->CompileAllShader();
 	if (FAILED(hr)) {
@@ -266,7 +276,7 @@ HRESULT SSRenderer::InitShaderManager()
 
 	SSShaderAssetManager::Get()->InstantiateAllShader(D3DDevice);
 	if (FAILED(hr)) {
-		SS_CLASS_ERR_LOG("Shader Instantiate Failed.");
+		SS_CLASS_ERR_LOG("Shader InstantiateGPUBuffer Failed.");
 		SS_LOG("Error(SSRenderer): Shader instantiate failed.\n");
 		SSShaderAssetManager::Get()->ReleaseAllShader();
 		return hr;
@@ -276,27 +286,7 @@ HRESULT SSRenderer::InitShaderManager()
 	return S_OK;
 }
 
-HRESULT SSRenderer::InitMaterialManager()
-{
-	SSMaterialAssetManager::Instantiate(100);
-	HRESULT hr = SSMaterialAssetManager::Get()->InstantiateAllMaterialsTemp(D3DDevice);
-	if (FAILED(hr)) {
-		SS_LOG("Error(SSRenderer): Shader compile failed.\n");
-		SSMaterialAssetManager::Get()->ReleaseAllMaterialsTemp();
-		return hr;
-	}
 
-	// HACK: Temp implementation
-	{
-		SSMaterialAsset* mat = SSMaterialAssetManager::Get()->GetMaterialWithIdx(0);
-		mat->UpdateTransform(_deviceContext, XMMatrixIdentity());
-
-		//		XMVECTOR ZeroVector = XMVectorZero();
-		//		mat->UpdateParameter(_deviceContext, 1, &ZeroVector, sizeof(XMVECTOR));
-	}
-
-	return hr;
-}
 
 
 HRESULT SSRenderer::ImportFBXFileToAssetPool()
@@ -317,12 +307,12 @@ HRESULT SSRenderer::ImportFBXFileToAssetPool()
 
 void SSRenderer::InitCameraTemp()
 {
-	RenderTarget = DBG_NEW SSCamera();
-	RenderTarget->UpdateResolutionWithClientRect(D3DDevice, hWnd);
-	RenderTarget->GetTransform().Position = Vector4f(.0f, 0.0f, -1000.0f, .0f);
-	RenderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - RenderTarget->GetTransform().Position);
-	RenderTarget->SetFOVWithRadians(XM_PIDIV4);
-	RenderTarget->SetNearFarZ(0.01f, 10000.f);
+	_renderTarget = DBG_NEW SSCamera();
+	_renderTarget->UpdateResolutionWithClientRect(D3DDevice, hWnd);
+	_renderTarget->GetTransform().Position = Vector4f(.0f, .0f, -5.0f, .0f);
+	_renderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - _renderTarget->GetTransform().Position);
+	_renderTarget->SetFOVWithRadians(XM_PIDIV4);
+	_renderTarget->SetNearFarZ(0.01f, 10000.f);
 
 	SS_LOG("Log (SSRenderer): Renderer Init finished!\n");
 }
@@ -330,6 +320,11 @@ void SSRenderer::InitCameraTemp()
 
 void SSRenderer::CleanUp()
 {
+	SSModelCombinationAssetManager::Get()->ReleaseAllAssets();
+	SSModelCombinationAssetManager::Release();
+
+	SSModelAssetManager::Get()->ReleaseAllModels();
+	SSModelAssetManager::Release();
 
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnSystem();
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnGPU();
@@ -344,14 +339,11 @@ void SSRenderer::CleanUp()
 	SSShaderAssetManager::Get()->ReleaseAllShader();
 	SSShaderAssetManager::Release();
 
-	ModelManager.ReleaseAllModels();
-	ModelManager.Release();
-
 
 
 	// HACK:임시작업
 	{
-		delete RenderTarget;
+		delete _renderTarget;
 	}
 
 	if (_deviceContext) _deviceContext->ClearState();
@@ -375,148 +367,6 @@ void SSRenderer::BeginFrame()
 
 void SSRenderer::PerFrame()
 {
-	// container example
-	{
-		srand(time(NULL));
-		SS::StringHashMapA<SS::FixedStringA<100>> hashMap(1024, 10, rand());
-		for (int i = 0; i < 300; i++) {
-			char buffer[100];
-			sprintf(buffer, "StringIdx%d", i);
-			InsertResult result = hashMap.TryInsert(buffer, buffer);
-		}
-		bool rebuildResult = hashMap.TryRebuild(2048, 10, rand());
-
-		EraseResult result8 = hashMap.TryErase("StringIdx1");
-		SS::FixedStringA<100> outData;
-		FindResult result1 = hashMap.TryFind("StringIdx123", outData);
-		assert(result1 == FindResult::Success );
-		FindResult result2 = hashMap.TryFind("StringIdx12", outData);
-		assert(result2 == FindResult::Success);
-		FindResult result3 = hashMap.TryFind("StringIdx1", outData);
-		FindResult result4 = hashMap.TryFind("StringIdx0", outData);
-		assert(result4 == FindResult::Success);
-		FindResult result5 = hashMap.TryFind("StringIdx78", outData);
-		assert(result5 == FindResult::Success);
-		FindResult result6 = hashMap.TryFind("StringIdx68", outData);
-		assert(result6 == FindResult::Success);
-		FindResult result7 = hashMap.TryFind("StringIdx256", outData);
-		assert(result7 == FindResult::Success);
-
-
-		for (uint32 i = 0; i < 300; i++) {
-			char buffer[100];
-			sprintf(buffer, "ADSASASDASD%d", i);
-			InsertResult result9 = hashMap.TryInsert(buffer, buffer);
-			assert(result9 == InsertResult::Success);
-		}
-
-		bool result = hashMap.TryRebuild(2048, 10, rand());
-
-		for (uint32 i = 0; i < 300; i++) {
-			char buffer[100];
-			sprintf(buffer, "ADSASASDASD%d", i);
-			SS::FixedStringA<100> outStr;
-			FindResult result9 = hashMap.TryFind(buffer, outStr);
-			assert(result9 == FindResult::Success);
-		}
-
-
-		SS::StringHashMapA<std::vector<uint32>> vectorHashMap(1024);
-		vectorHashMap.TryInsert("ASDF1", std::vector<uint32>(1));
-		vectorHashMap.TryInsert("ASDF2", std::vector<uint32>(2));
-		vectorHashMap.TryInsert("ASDF3", std::vector<uint32>(3));
-		vectorHashMap.TryInsert("ASDF4", std::vector<uint32>(4));
-
-
-
-		SS::PooledLinkedList<SS::FixedStringA<100>> linkedList(100);
-		linkedList.PushBack("AA10");
-		linkedList.PushBack("20");
-		linkedList.PushBack("30");
-		linkedList.PushBack("AA40");
-		linkedList.PushBack("50");
-		linkedList.PushBack("60");
-		linkedList.PushBack("70");
-		linkedList.PushFront("1");
-		linkedList.PushFront("2");
-		linkedList.PushFront("3");
-		linkedList.PushFront("AASAD4");
-		linkedList.PushFront("5");
-		linkedList.PushFront("6");
-		linkedList.PushFront("7");
-		linkedList.InsertFront(linkedList.FindIteratorAt(3), "the best before me...");
-		linkedList.InsertBack(linkedList.FindIteratorAt(3), "goodbye beombo...");
-		linkedList.Erase(linkedList.FindIteratorAt(5));
-
-		for (const SS::FixedStringA<100>&item : linkedList) {
-			SS_LOG("linkedlist item: %s \n", item);
-		}
-
-		SS::PooledLinkedList<uint32> intList(100);
-		intList.PushBack(1);
-		intList.PushBack(2);
-		intList.PushBack(3);
-		intList.PushBack(4);
-		intList.PushBack(5);
-		intList.PopBack();
-		intList.PopFront();
-
-
-
-
-
-
-		SS::PooledLinkedList<std::vector<uint32>> vectorLinkedList(8);
-		vectorLinkedList.PushBack(std::vector<uint32>(3));
-		vectorLinkedList.PushBack(std::vector<uint32>(4));
-		vectorLinkedList.PushBack(std::vector<uint32>(5));
-		vectorLinkedList.PushBack(std::vector<uint32>(6));
-		vectorLinkedList.PushBack(std::vector<uint32>(7));
-
-		std::vector<uint32> myVector(20);
-		vectorLinkedList.PushBack(myVector);
-
-		
-		SS::FixedList<std::vector<uint32>, 4> vectorList;
-		vectorList.PushBack(std::vector<uint32>(10));
-		vectorList.PushBack(std::vector<uint32>(20));
-		vectorList.PushBack(std::vector<uint32>(30));
-		vectorList.PushBack(std::vector<uint32>(40));
-		
-		for (const std::vector<uint32>& item : vectorList) {
-			printf("\t\tvector list size: %d\n", item.size());
-		}
-
-		vectorList.Resize(2);
-		vectorList.PushBack(std::vector<uint32>(200));
-		for (uint32 i = 0; i < vectorList.GetSize(); i++)
-			vectorList[i].resize(200);
-		vectorList.Clear();
-
-		
-		SS::PooledList<std::vector<uint32>> pooledVectorList(4);
-		pooledVectorList.PushBack(std::vector<uint32>(10));
-		pooledVectorList.PushBack(std::vector<uint32>(30));
-		pooledVectorList.PushBack(std::vector<uint32>(20));
-		pooledVectorList.PushBack(std::vector<uint32>(40));
-
-		for(const std::vector<uint32>& item : pooledVectorList)
-		{
-			printf("\t\tpooled vector list size: %d\n", item.size());
-		}
-
-		pooledVectorList.IncreaseCapacityAndCopy(10);
-		pooledVectorList.Resize(2);
-		pooledVectorList.PushBack(std::vector<uint32>(100));
-
-		for (uint32 i = 0; i < pooledVectorList.GetSize(); i++)
-			printf("\t\tpooled vector list size: %d\n", pooledVectorList[i].size());
-			
-		pooledVectorList.Clear();
-
-
-	}
-
 	_deviceContext->ClearRenderTargetView(RenderTargetView, Colors::MidnightBlue);
 	_deviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -539,33 +389,39 @@ void SSRenderer::PerFrame()
 
 	// process keyborad input
 	{
-		constexpr float CAM_SPEED = 100;
+		constexpr float CAM_SPEED = 3;
 		constexpr float CAM_ROT_SPEED = 0.5;
 		constexpr float CAM_ZOOM_SPEED = 1;
 
+		if (SSInput::GetKeyDown(EKeyCode::KEY_W))
+			SS_LOG("W Key down!\n");
+
+		if (SSInput::GetKeyUp(EKeyCode::KEY_W))
+			SS_LOG("W Key up!\n");
+
 		if (SSInput::GetKey(EKeyCode::KEY_W))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetForward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetForward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_S))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetBackward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetBackward() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_A))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetLeft() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetLeft() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_D))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetRight() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetRight() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_E))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetUp() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetUp() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_Q))
-			RenderTarget->GetTransform().Position = RenderTarget->GetTransform().Position + RenderTarget->GetTransform().GetDown() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
+			_renderTarget->GetTransform().Position = _renderTarget->GetTransform().Position + _renderTarget->GetTransform().GetDown() * SSFrameInfo::GetDeltaTime() * CAM_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_C))
-			RenderTarget->SetFOVWithRadians(RenderTarget->GetRadianFOV() - SSFrameInfo::GetDeltaTime() * CAM_ZOOM_SPEED);
+			_renderTarget->SetFOVWithRadians(_renderTarget->GetRadianFOV() - SSFrameInfo::GetDeltaTime() * CAM_ZOOM_SPEED);
 
 		if (SSInput::GetKey(EKeyCode::KEY_Z))
-			RenderTarget->SetFOVWithRadians(RenderTarget->GetRadianFOV() + SSFrameInfo::GetDeltaTime() * CAM_ZOOM_SPEED);
+			_renderTarget->SetFOVWithRadians(_renderTarget->GetRadianFOV() + SSFrameInfo::GetDeltaTime() * CAM_ZOOM_SPEED);
 
 		if (SSInput::GetKey(EKeyCode::KEY_RIGHT))
 			_camYRotation += SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
@@ -586,40 +442,57 @@ void SSRenderer::PerFrame()
 		}
 	}
 
+
 	_camYRotation = fmodf(_camYRotation, XM_2PI);
-	RenderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
+	_renderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
 
 
-	SSGeometryAsset* Geometry = SSGeometryAssetManager::GetGeometryWithIdx(50);
-	Geometry->SetDrawTopology(GeometryDrawTopology::TRIANGLELIST);
 
-	SSMaterialAsset* Material = SSMaterialAssetManager::Get()->GetMaterialWithIdx(0);
+	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME "_.mdlc");
+	SSModelAsset* mdl = SSModelAssetManager::FindModelWithName(TEMP_MDL_NAME);
 
-	Geometry->BindGeometry(_deviceContext);
-	Material->BindMaterial(_deviceContext);
+	Transform trans;
 
-	{
-		Vector4f MeshColor;
-		MeshColor.X = (sinf(SSFrameInfo::GetElapsedTime() * 1.0f) + 1.0f) * 0.5f;
-		MeshColor.Y = (cosf(SSFrameInfo::GetElapsedTime() * 3.0f) + 1.0f) * 0.5f;
-		MeshColor.Z = (sinf(SSFrameInfo::GetElapsedTime() * 5.0f) + 1.0f) * 0.5f;
-		MeshColor = Vector4f(1, 1, 1, 1);
-
-//		Material->UpdateParameter(_deviceContext, 2, &MeshColor, sizeof(Vector4f));
-
-		XMMATRIX Temp = RenderTarget->GetViewProjMatrix();
-
-//		Material->UpdateTransform(_deviceContext, XMMatrixTranspose(XMMatrixRotationY(SSFrameInfo::GetElapsedTime())));
-
-		Material->UpdateCameraSetting(_deviceContext, XMMatrixTranspose(RenderTarget->GetViewProjMatrix()));
-	}
-
-
-	uint32 IdxSize = Geometry->GetIndexDataNum();
-	_deviceContext->DrawIndexed(IdxSize, 0, 0);
-
+//	mdl->GetMaterial()->UpdateCameraGPUBufferSetting(_deviceContext, XMMatrixTranspose(_renderTarget->GetViewProjMatrix()));
+//	mdl->GetMaterial()->UpdateTransformGPUBuffer(_deviceContext, XMMatrixTranspose(trans.AsMatrix()));
+//	mdl->BindModel(_deviceContext);
+//	_deviceContext->DrawIndexed(mdl->GetGeometry()->GetIndexDataNum(), 0, 0);
+	
+	//trans.Rotation = Quaternion::RotateAxisAngle(trans.Rotation,Vector4f::Right, SSStaticMath::DegToRadians(-90.0f));
+	TraverseModelCombinationAndDraw(mdlComb, trans.AsMatrix(), trans.Rotation.AsMatrix());
 
 	SwapChain->Present(0, 0);
+}
+
+void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix)
+{
+
+		// HACK: model combination을 에셋이 아니라 별도의 노드로 빼고 루트노드만 에셋으로 빼기
+		// HACK: asset->GetParent()!= nullptr 없애기
+	if (asset->GetAssetType() == AssetType::ModelCombination && asset->GetParent() != nullptr)
+	{
+		const SSModelCombinationAsset* modelCombination = static_cast<const SSModelCombinationAsset*>(asset);
+		const SSModelAsset* modelAsset = modelCombination->GetModelAsset();
+		SSMaterialAsset* materialAsset = modelAsset->GetMaterial();
+
+		materialAsset->UpdateCameraGPUBufferSetting(_deviceContext, XMMatrixTranspose(_renderTarget->GetViewProjMatrix()));
+		materialAsset->UpdateTransformGPUBuffer(_deviceContext, transformMatrix, rotMatrix);
+
+		modelAsset->BindModel(_deviceContext);
+
+		const uint32 IdxSize = modelAsset->GetGeometry()->GetIndexDataNum();
+		_deviceContext->DrawIndexed(IdxSize, 0, 0);
+	}
+
+	for (SSPlaceableAsset* item : asset->GetChilds())
+	{
+		//		if (strcmp(item->GetAssetName(), "Dirt02") == 0) __debugbreak();
+		XMMATRIX mat = item->GetTransform().AsMatrix();
+		XMMATRIX matmul = item->GetTransform().AsMatrix() * transformMatrix;
+		TraverseModelCombinationAndDraw(item,
+			item->GetTransform().AsMatrix() * transformMatrix,
+			item->GetTransform().Rotation.AsMatrix() * rotMatrix);
+	}
 }
 
 

@@ -7,11 +7,11 @@
 
 #include "../resource.h"
 #include "SSEngineDefault/SSNativeTypes.h"
-#include "SSShaderAssetManager.h"
 
-#include "SSModelAssetManager.h"
-#include "SSAsset/SSFBXImporter.h"
+#include "RenderAsset/SSFBXImporter.h"
 
+
+class SSModelCombinationAsset;
 
 class SSRenderer {
 
@@ -35,21 +35,18 @@ private:
 
 	RECT WindowRect = { 0,0,0,0 };
 
-	SSModelAssetManager ModelManager;
-
 	SSFBXImporter _fbxImporter;
 
-	class SSCamera* RenderTarget;
+	class SSCamera* _renderTarget;
 
 	float _camYRotation = 0;
 	float _camXRotation = 0;
 
-
+	
 public:
 
 	HRESULT Init(HINSTANCE InhInst, HWND InhWnd);
 	HRESULT InitShaderManager();
-	HRESULT InitMaterialManager();
 	HRESULT ImportFBXFileToAssetPool();
 	void CleanUp();
 
@@ -58,8 +55,9 @@ public:
 
 	void PerFrame();
 
-private:
 
+private:
+	void TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
 
 	void InitCameraTemp();
 

@@ -14,10 +14,11 @@
 using namespace DirectX;
 namespace WRL = Microsoft::WRL; // Windows Runtime Library
 
-SSShaderAsset::SSShaderAsset(const WCHAR* InShaderName, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel)
+SSShaderAsset::SSShaderAsset(const char* InShaderName, const utf16* InShaderPath, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel)
+	: SSAssetBase(AssetType::Shader)
 {
 
-	if (wcslen(InShaderName) > SHADER_FILE_NAME_MAX_LEN) {
+	if (strlen(InShaderName) > SHADER_FILE_NAME_MAX_LEN) {
 		SS_LOG("Error(SSShaderAsset::SSShaderAsset): Shader file name too long\n");
 		return;
 	}
@@ -32,32 +33,32 @@ SSShaderAsset::SSShaderAsset(const WCHAR* InShaderName, LPCSTR szVSEntryPoint, L
 		return;
 	}
 
+	_assetPath = InShaderPath;
+	_assetName = InShaderName;
+	_vsShaderEntryPoint = szVSEntryPoint;
+	_psShaderEntryPoint = szPSEntryPoint;
 
-	wcscpy_s(ShaderName, InShaderName);
-	strcpy_s(VSEntryPointName, szVSEntryPoint);
-	strcpy_s(PSEntryPointName, szPSEntryPoint);
-
-	CurStage = ShaderAssetInstanceStage::JustCreated;
+	_curStage = ShaderAssetInstanceStage::JustCreated;
 }
 
 HRESULT SSShaderAsset::CompileShader()
 {
 
 	HRESULT hr =
-		ExternalUtils::CompileShaderFromFile(ShaderName, VSEntryPointName, "vs_4_0", &VSBlob);
+		ExternalUtils::CompileShaderFromFile(_assetPath, _vsShaderEntryPoint, "vs_4_0", &VSBlob);
 
 	if (FAILED(hr)) {
 		WSS_CLASS_ERR_LOG("(Vertex Shader: %ls)The shader file cannot be compiled. Please run this executable"
-			" from the directory that contains the FX file.\n", ShaderName);
+			" from the directory that contains the FX file.\n", _assetPath.GetData());
 		return hr;
 	}
 
 	hr =
-		ExternalUtils::CompileShaderFromFile(ShaderName, PSEntryPointName, "ps_4_0", &PSBlob);
+		ExternalUtils::CompileShaderFromFile(_assetPath, _psShaderEntryPoint, "ps_4_0", &PSBlob);
 
 	if (FAILED(hr)) {
-		WSS_LOG(L"Warning: (Pixel Shader: %s)The shader file cannot be compiled.  Please run this executable \
-			from the directory that contains the FX file.\n", ShaderName);
+		WSS_LOG(L"Warning: (Pixel Shader: %ls)The shader file cannot be compiled.  Please run this executable \
+			from the directory that contains the FX file.\n", _assetPath.GetData());
 		VSBlob->Release();
 		VSBlob = nullptr;
 		return hr;
@@ -74,7 +75,7 @@ HRESULT SSShaderAsset::CompileShader()
 		if (FAILED(hr)) {
 			VSBlob->Release();
 			PSBlob->Release();
-			WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %s) Reflection failed.\n", ShaderName);
+			WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %ls) Reflection failed.\n", _assetPath.GetData());
 			return E_FAIL;
 		}
 
@@ -82,7 +83,7 @@ HRESULT SSShaderAsset::CompileShader()
 		if (FAILED(hr)) {
 			VSBlob->Release();
 			PSBlob->Release();
-			WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %s) Reflection failed.\n", ShaderName);
+			WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %ls) Reflection failed.\n", _assetPath.GetData());
 			return E_FAIL;
 		}
 
@@ -161,13 +162,13 @@ HRESULT SSShaderAsset::CompileShader()
 
 			hr = CBReflection->GetDesc(&bufferDesc);
 			if (FAILED(hr)) {
-				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %s) Vertex shader const buffer reflection failed.\n", ShaderName);
+				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %ls) Vertex shader const buffer reflection failed.\n", _assetPath.GetData());
 				return hr;
 			}
 
 			hr = VertexShaderReflection->GetResourceBindingDescByName(bufferDesc.Name, &bufferBindDesc);
 			if (FAILED(hr)) {
-				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %s) Vertex shader const buffer reflection failed.\n", ShaderName);
+				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Vertex Shader: %ls) Vertex shader const buffer reflection failed.\n", _assetPath.GetData());
 				return hr;
 			}
 
@@ -209,13 +210,13 @@ HRESULT SSShaderAsset::CompileShader()
 
 			hr = CBReflection->GetDesc(&bufferDesc);
 			if (FAILED(hr)) {
-				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %s) Pixel shader const buffer reflection failed.\n", ShaderName);
+				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %ls) Pixel shader const buffer reflection failed.\n", _assetPath.GetData());
 				return hr;
 			}
 
 			hr = PixelShaderReflection->GetResourceBindingDescByName(bufferDesc.Name, &bufferBindDesc);
 			if (FAILED(hr)) {
-				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %s) Pixel shader const buffer reflection failed.\n", ShaderName);
+				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %ls) Pixel shader const buffer reflection failed.\n", _assetPath.GetData());
 				return hr;
 			}
 
@@ -244,23 +245,22 @@ HRESULT SSShaderAsset::CompileShader()
 
 		// TODO: 나중에 VS셰이더에 텍스쳐가 필요할 수도 있음
 		// 04. PS Texture and Sampler reflection
-		ShaderReflection._texturePoolCount = 0;
+		ShaderReflection.TexturePoolCount = 0;
 		ShaderReflection.SamplerCount = 0;
 
 		for (int i = 0; i < PSShaderDesc.BoundResources; i++) {
 
 			D3D11_SHADER_INPUT_BIND_DESC bufdesc;
-			hr =
-				PixelShaderReflection->GetResourceBindingDesc(i, &bufdesc);
+			hr = PixelShaderReflection->GetResourceBindingDesc(i, &bufdesc);
 
 
 			if (FAILED(hr)) {
-				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %s) Pixel shader texture reflection failed.\n", ShaderName);
+				WSS_LOG(L"Error(SSShaderAsset::CompileShader()): (Pixel Shader: %ls) Pixel shader texture reflection failed.\n", _assetPath.GetData());
 				return hr;
 			}
 
 			switch (bufdesc.Type) {
-			case D3D_SIT_TEXTURE: ShaderReflection._texturePoolCount++; break;
+			case D3D_SIT_TEXTURE: ShaderReflection.TexturePoolCount++; break;
 			case D3D_SIT_SAMPLER: ShaderReflection.SamplerCount++; break;
 
 			default: break;
@@ -271,21 +271,21 @@ HRESULT SSShaderAsset::CompileShader()
 	}
 
 
-	CurStage = ShaderAssetInstanceStage::Compiled;
+	_curStage = ShaderAssetInstanceStage::Compiled;
 	return S_OK;
 }
 
 
 HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 {
-	switch (CurStage) {
+	switch (_curStage) {
 	case ShaderAssetInstanceStage::JustCreated:
-		WSS_LOG(L"Warning(SSShaderAsset::InstantiateShader): (Shader Name: %s)Shader compile needed\n", ShaderName);
+		WSS_LOG(L"Warning(SSShaderAsset::InstantiateShader): (Shader Name: %ls)Shader compile needed\n", _assetPath.GetData());
 		return E_FAIL;
 	case ShaderAssetInstanceStage::Compiled:
 		break;
 	case ShaderAssetInstanceStage::Instantiated:
-		WSS_LOG(L"Warning(SSShaderAsset::InstantiateShader): (Shader Name: %s)Shader is already instiantiated\n", ShaderName);
+		WSS_LOG(L"Warning(SSShaderAsset::InstantiateShader): (Shader Name: %ls)Shader is already instiantiated\n", _assetPath.GetData());
 		return E_FAIL;
 	}
 
@@ -293,7 +293,7 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 		CreateVertexShader(VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), nullptr, &VertexShader);
 
 	if (FAILED(hr)) {
-		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Vertex Shader[%s] instantiate failed\n", ShaderName);
+		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Vertex Shader[%ls] instantiate failed\n", _assetPath.GetData());
 		return hr;
 	}
 
@@ -302,7 +302,7 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 
 	if (FAILED(hr)) {
 		VertexShader->Release();
-		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Pixel Shader[%s] instantiate failed\n", ShaderName);
+		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Pixel Shader[%ls] instantiate failed\n", _assetPath.GetData());
 		return hr;
 	}
 
@@ -310,7 +310,7 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 		CreateInputLayout(LayoutDescArray, layoutElemCount, VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), &InputLayout);
 
 	if (FAILED(hr)) {
-		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Shader[%s] Create input layout failed\n", ShaderName);
+		WSS_LOG(L"Error(SSShaderAsset::InstantiateShader): Shader[%ls] Create input layout failed\n", _assetPath.GetData());
 		return hr;
 	}
 
@@ -320,18 +320,18 @@ HRESULT SSShaderAsset::InstantiateShader(ID3D11Device* InDevice)
 	PSBlob = nullptr;
 
 
-	CurStage = ShaderAssetInstanceStage::Instantiated;
+	_curStage = ShaderAssetInstanceStage::Instantiated;
 	return S_OK;
 }
 
 
 
 
-void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* _deviceContext)
+void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* _deviceContext) const
 {
-	if (CurStage < ShaderAssetInstanceStage::Instantiated) {
-		WSS_LOG(L"Warning[%s]: Shader is not initalized completely. CurState: %d\n"
-			, ShaderName, CurStage);
+	if (_curStage < ShaderAssetInstanceStage::Instantiated) {
+		WSS_LOG(L"Warning[%ls]: Shader is not initalized completely. CurState: %d\n"
+			, _assetPath.GetData(), _curStage);
 		return;
 	}
 
@@ -343,7 +343,7 @@ void SSShaderAsset::BindShaderAsset(ID3D11DeviceContext* _deviceContext)
 
 void SSShaderAsset::Release()
 {
-	switch (CurStage) {
+	switch (_curStage) {
 
 	case ShaderAssetInstanceStage::Instantiated:
 
