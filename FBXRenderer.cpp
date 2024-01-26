@@ -69,18 +69,17 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 
 	while (WM_QUIT != msg.message)
 	{
-		SSFrameInfo::Get()->ProcessPerFrameBeginEventInternal();
-
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
-		g_Renderer.PerFrame();
-
-
-		SSInput::Get()->ProcessInputEndOfFrame();
+		else
+		{
+			SSFrameInfo::Get()->ProcessPerFrameBeginEventInternal();
+			g_Renderer.PerFrame();
+			SSInput::Get()->ProcessInputEndOfFrame();
+		}
 	}
 
 

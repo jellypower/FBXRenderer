@@ -43,6 +43,7 @@ HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 		return hr;
 	}
 
+	SSGeometryAsset* myPtr = nullptr;
 
 	if (_indexData == nullptr) {
 		SS_CLASS_ERR_LOG(" Index data must be initialzed");

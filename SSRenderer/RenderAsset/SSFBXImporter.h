@@ -1,6 +1,8 @@
 #pragma once
 
-#include <SSEngineDefault/SSEngineDefault.h>
+#include "SSEngineDefault/SSEngineDefault.h"
+
+#define FBXSDK_SHARED
 #include <fbxsdk.h>
 
 #include "AssetType/SSAssetBase.h"
@@ -15,10 +17,10 @@ class SSPlaceableAsset;
 
 class SSFBXImporter {
 private:
-	::FbxManager* _FBXManager = nullptr;
-	::FbxIOSettings* _IOSetting = nullptr;
-	::FbxImporter* _FBXImporter = nullptr;
-	::FbxScene* _currentScene = nullptr;
+	FbxManager* _FBXManager = nullptr;
+	FbxIOSettings* _IOSetting = nullptr;
+	FbxImporter* _FBXImporter = nullptr;
+	FbxScene* _currentScene = nullptr;
 	SS::FixedStringA<ASSET_NAME_LEN_MAX> _fileName;
 	SS::FixedStringA<PATH_LEN_MAX> _filePath;
 
@@ -33,7 +35,10 @@ public:
 
 
 private:
-	void TraverseNodes();
+
+	void ImportCurrentSceneToMaterialAsset();
+
+	void ImportCurrentSceneToModelAsset();
 	void TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset);
 
 	SSGeometryAsset* GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh);

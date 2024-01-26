@@ -52,6 +52,8 @@ namespace SS {
 		void Append(const char* data);
 		void Append(const char* data, uint32 len);
 
+		void CutOut(uint32 newStrlen);
+
 		FixedStringA& operator+=(const char* data);
 		FORCEINLINE operator const char* () const { return GetData(); }
 
@@ -113,6 +115,14 @@ namespace SS {
 		assert(_len + len < STR_LEN_MAX);
 		strncpy(_dataPool + _len, data, len);
 		_len += len;
+		_dataPool[_len] = '\0';
+	}
+
+	template <uint32 STR_LEN_MAX>
+	void FixedStringA<STR_LEN_MAX>::CutOut(uint32 newStrlen)
+	{
+		assert(newStrlen < _len);
+		_len = newStrlen;
 		_dataPool[_len] = '\0';
 	}
 

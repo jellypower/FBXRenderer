@@ -16,3 +16,4 @@
 
 #include "SSDebugLogger.h"
 #include "SSNativeKeywords.h"
+#include "SSStaticMath.h"

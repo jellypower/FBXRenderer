@@ -15,11 +15,6 @@ cbuffer CameraBuffer : register(b1)
     matrix VPMatrix;
 };
 
-cbuffer cbChangesEveryFrame : register(b2)
-{
-    float4 vMeshColor; // 매 프레임 변화는 색
-};
-
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -42,9 +37,18 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 Pos : SV_POSITION;
-    float3 Normal : TEXCOORD0;
-    float4 Color : TEXCOORD1;
-    // TEXCOORD 시멘틱은 텍스쳐 좌표 뿐 아니라 정밀도 있는 float단위 숫자를 전달할 때도 많이 씀
+    float3 Normal : NORMAL;
+    
+#ifndef NO_TANGENT_FRAME
+    float4 Tangent : TANGENT;
+#endif
+
+    float2 UV0 : TEXCOORD0;
+#ifndef NO_SECOND_UV
+    float2 UV1 : TEXCOORD1;
+#endif
+
+    float3 WorldPos : TEXCOORD2;
 };
 
 
@@ -54,7 +58,13 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(input.Pos, WMatrix);
     output.Pos = mul(output.Pos, VPMatrix);
     output.Normal = mul(input.Normal, RotMatrix);
-    output.Color = input.Normal;
+#ifndef NO_TANGENT_FRAME
+    output.Tangent = mul(RotMatrix, input.Tangent.xyz); // TODO: tangent 관련 문제 생길수도 있음
+#endif
+
+    output.UV0 = input.UV0;
+    output.UV1 = input.UV1;
+    output.WorldPos = mul(input.Pos, WMatrix);
     
     return output;
 }
@@ -71,11 +81,12 @@ float4 PS(PS_INPUT input) : SV_Target
     const float DIFFUSE_COEFF = 0.7;
     const float AMBIENT_COEFF = 0.3;
     
-    float Diffuse = max(dot(input.Normal, LightDir), 0) * DIFFUSE_COEFF; // 노말과 빛 사이의 각도 Normal Light
+    float4 Diffuse = txDiffuse.Sample(samLinear, input.UV0)
+		* max(dot(input.Normal, LightDir), 0) * DIFFUSE_COEFF; // 노말과 빛 사이의 각도 Normal Light
     float Ambient = AMBIENT_COEFF;
     
-    float color = Diffuse + Ambient;
+    float4 color = Diffuse + Ambient;
     
     
-    return float4(color, color, color, 1);
+    return color;
 }

@@ -2,10 +2,11 @@
 
 #include "SSEngineDefault/SSDebugLogger.h"
 
+
 #include <directxmath.h>
 
 #include "../SSShaderAssetManager.h"
-
+#include "SSTextureAsset.h"
 using namespace DirectX;
 
 SSMaterialAsset::SSMaterialAsset(const char* MaterialAssetName, SSShaderAsset* InShaderAsset)
@@ -45,7 +46,7 @@ SSMaterialAsset::SSMaterialAsset(const char* MaterialAssetName, const char* InSh
 	_materialStage = MaterialAssetInstanceStage::JustCreated;
 }
 
-void SSMaterialAsset::InstantiateCPUBuffer()
+void SSMaterialAsset::InstantiateSystemBuffer()
 {
 	for (int i = 0; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
 		ConstBufferData[i] = malloc(_shaderReflectionCache->EntireCBReflectionInfo[i].CBSize);
@@ -97,8 +98,12 @@ void SSMaterialAsset::BindMaterial(ID3D11DeviceContext* InDeviceContext) const
 			&PSConstantBuffers[i]);
 	}
 
+	for(uint32 i=0;i<_shaderReflectionCache->TexturePoolCount;i++)
+	{
+		InDeviceContext->PSSetShaderResources(i,	1, _textureList[i]->GetSRVpp());
+	}
 
-	InDeviceContext->PSSetShaderResources(0, _shaderReflectionCache->TexturePoolCount, _textureList);
+	
 	InDeviceContext->PSSetSamplers(0, _shaderReflectionCache->SamplerCount, _sampleStateList);
 
 }
@@ -135,31 +140,26 @@ void SSMaterialAsset::InstantiateGPUBuffer(ID3D11Device* InDevice)
 
 void SSMaterialAsset::UpdateSystemBuffer(int bufferIdx, const void* InData, uint32 InDataSize)
 {
-#ifdef _DEBUG
-	if (InDataSize != _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize) {
-		SS_CLASS_ERR_LOG("Data size not match\n");
-		return;
-	}
-#endif
+	SS_ASSERT(InDataSize == _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, "Data size not match\n");
 	memcpy_s(ConstBufferData[bufferIdx], _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, InData, InDataSize);
 }
 
-void SSMaterialAsset::UpdateGPUBuffer(ID3D11DeviceContext* InDeviceContext, uint32 bufferIdx)
+void SSMaterialAsset::SyncGPUBuffer(ID3D11DeviceContext* InDeviceContext, uint32 bufferIdx)
 {
-	InDeviceContext->UpdateSubresource(ConstantBuffers[bufferIdx], 0, nullptr, ConstantBuffers[bufferIdx], 0, 0);
+	InDeviceContext->UpdateSubresource(ConstantBuffers[bufferIdx], 0, nullptr, ConstBufferData[bufferIdx], 0, 0);
 }
 
 
 
-void SSMaterialAsset::UpdateAllGPUBuffer(ID3D11DeviceContext* InDeviceContext, void** InConstBufferData, uint8 InConstBufferCount)
+void SSMaterialAsset::SyncAllGPUBuffer(ID3D11DeviceContext* InDeviceContext)
 {
-	for (int i = MATERIAL_PARAM_START_IDX; i < InConstBufferCount; i++) {
-		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, InConstBufferData[i], 0, 0);
+	for (uint32 i = MATERIAL_PARAM_START_IDX; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
+		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, ConstBufferData[i], 0, 0);
 	}
 }
 
 
-void SSMaterialAsset::UpdateTransformGPUBuffer(ID3D11DeviceContext* InDeviceContext, const Transform& InTransform)
+void SSMaterialAsset::UpdateTransform(ID3D11DeviceContext* InDeviceContext, const Transform& InTransform)
 {
 	XMMATRIX worldMatrix[2];
 	worldMatrix[0] = XMMatrixTranspose(InTransform.AsMatrix());
@@ -167,7 +167,7 @@ void SSMaterialAsset::UpdateTransformGPUBuffer(ID3D11DeviceContext* InDeviceCont
 	InDeviceContext->UpdateSubresource(ConstantBuffers[W_TRANSFOMRM_IDX], 0, nullptr, worldMatrix, 0, 0);
 }
 
-void SSMaterialAsset::UpdateTransformGPUBuffer(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& WMatrix, const XMMATRIX& RotMatrix)
+void SSMaterialAsset::UpdateTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& WMatrix, const XMMATRIX& RotMatrix)
 {
 	XMMATRIX worldMatrix[2];
 	worldMatrix[0] = XMMatrixTranspose(WMatrix);

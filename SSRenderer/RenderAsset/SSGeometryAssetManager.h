@@ -2,7 +2,6 @@
 #include "SSEngineDefault/SSEngineDefault.h"
 #include "AssetType/SSGeometryAsset.h"
 
-#include <fbxsdk.h>
 
 #include "SSEngineDefault/SSContainer/PooledList.h"
 #include "SSEngineDefault/SSContainer/StringHashMapA.h"

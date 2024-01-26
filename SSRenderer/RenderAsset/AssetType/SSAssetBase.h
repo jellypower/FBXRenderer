@@ -12,7 +12,7 @@ enum class AssetType
 	Material,
 	Model,
 	ModelCombination,
-
+	Texture,
 
 	Count
 };
@@ -32,6 +32,5 @@ public:
 	FORCEINLINE const AssetType GetAssetType() const { return _assetType; }
 
 protected:
-	virtual ~SSAssetBase() = 0 { };
+	virtual ~SSAssetBase() = 0 { }
 };
-

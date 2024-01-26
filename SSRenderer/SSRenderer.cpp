@@ -13,7 +13,7 @@
 #include "RenderAsset/SSShaderAssetManager.h"
 #include "RenderAsset/SSGeometryAssetManager.h"
 #include "RenderAsset/SSMaterialAssetManager.h"
-#include "RenderAsset/SSTextureManager.h"
+#include "RenderAsset/SSTextureAssetManager.h"
 
 
 #include <vector>
@@ -25,14 +25,15 @@
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\c.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedBox.fbx"
 //#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
 
-#define TEMP_MDLC_NAME "rp_nathan_animated_003_walking.fbx"
-#define TEMP_MDL_NAME "PSController.fbx_PS4 Controller.mdl"
+#define TEMP_MDLC_NAME "ExportedRoom.mdlc"
+#define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
 
 
 HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
@@ -227,8 +228,8 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		return hr;
 	}
 
-	SSTextureManager::Instantiate(100);
-	hr = SSTextureManager::Get()->TempLoadTexture(D3DDevice);
+	SSTextureAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+	hr = SSTextureAssetManager::Get()->TempLoadTexture(D3DDevice);
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG("Texture Loader init failed.");
 		return hr;
@@ -238,7 +239,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	SSMaterialAssetManager::Get()->CreateTempMaterials(D3DDevice);
 	{
 		SSMaterialAsset* mat = SSMaterialAssetManager::GetAssetWithIdx(0);
-		mat->UpdateTransformGPUBuffer(_deviceContext, Transform());
+		mat->UpdateTransform(_deviceContext, Transform());
 	}
 
 	SSGeometryAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
@@ -258,6 +259,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		SSMaterialAssetManager::Get()->ReleaseAllMaterialsTemp();
 		return hr;
 	}
+	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnSystem();
 
 	return S_OK;
 }
@@ -326,15 +328,14 @@ void SSRenderer::CleanUp()
 	SSModelAssetManager::Get()->ReleaseAllModels();
 	SSModelAssetManager::Release();
 
-	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnSystem();
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnGPU();
 	SSGeometryAssetManager::Release();
 
 	SSMaterialAssetManager::Get()->ReleaseAllMaterialsTemp();
 	SSMaterialAssetManager::Get()->Release();
 
-	SSTextureManager::Get()->ReleaseAllTextures();
-	SSTextureManager::Release();
+	SSTextureAssetManager::Get()->ReleaseAllTextures();
+	SSTextureAssetManager::Release();
 
 	SSShaderAssetManager::Get()->ReleaseAllShader();
 	SSShaderAssetManager::Release();
@@ -448,17 +449,11 @@ void SSRenderer::PerFrame()
 
 
 
-	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME "_.mdlc");
+	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME);
 	SSModelAsset* mdl = SSModelAssetManager::FindModelWithName(TEMP_MDL_NAME);
 
 	Transform trans;
 
-//	mdl->GetMaterial()->UpdateCameraGPUBufferSetting(_deviceContext, XMMatrixTranspose(_renderTarget->GetViewProjMatrix()));
-//	mdl->GetMaterial()->UpdateTransformGPUBuffer(_deviceContext, XMMatrixTranspose(trans.AsMatrix()));
-//	mdl->BindModel(_deviceContext);
-//	_deviceContext->DrawIndexed(mdl->GetGeometry()->GetIndexDataNum(), 0, 0);
-	
-	//trans.Rotation = Quaternion::RotateAxisAngle(trans.Rotation,Vector4f::Right, SSStaticMath::DegToRadians(-90.0f));
 	TraverseModelCombinationAndDraw(mdlComb, trans.AsMatrix(), trans.Rotation.AsMatrix());
 
 	SwapChain->Present(0, 0);
@@ -476,7 +471,7 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 		SSMaterialAsset* materialAsset = modelAsset->GetMaterial();
 
 		materialAsset->UpdateCameraGPUBufferSetting(_deviceContext, XMMatrixTranspose(_renderTarget->GetViewProjMatrix()));
-		materialAsset->UpdateTransformGPUBuffer(_deviceContext, transformMatrix, rotMatrix);
+		materialAsset->UpdateTransform(_deviceContext, transformMatrix, rotMatrix);
 
 		modelAsset->BindModel(_deviceContext);
 

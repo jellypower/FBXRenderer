@@ -23,10 +23,9 @@ class SSShaderAsset : public SSAssetBase
 
 public:
 	SSShaderAsset(const char* InShaderName, const utf16* InShaderPath, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel);
+
 	HRESULT CompileShader();
-
 	HRESULT InstantiateShader(ID3D11Device* InDevice);
-
 	void Release();
 
 	void BindShaderAsset(ID3D11DeviceContext* _deviceContext) const;

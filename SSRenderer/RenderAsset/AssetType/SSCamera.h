@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SSEngineDefault/SSNativeTypes.h"
-#include "SSStaticMath.h"
+#include "SSEngineDefault/SSStaticMath.h"
 
 #include <d3d11.h>
 #include <windows.h>

@@ -1,8 +1,10 @@
 #pragma once
+#include<assert.h>
+
 #ifdef _DEBUG
 
 #ifdef _WINDOWS
-#include<assert.h>
+
 #include<tchar.h>
 #include<intrin.h>
 #include<dxgidebug.h>
@@ -48,6 +50,8 @@
 #define SS_CLASS_WARNING_LOG(...)
 
 #define SS_ASSERT_WITH_MESSAGE(...)
+#define WASSERT_WITH_MESSAGE(...)
+#define SS_ASSERT(...)
 
 #define WSS_CLASS_ERR_LOG(...)
 

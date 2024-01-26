@@ -1,4 +1,6 @@
 #pragma once
+#include <new>
+
 #include "CityHash.h"
 #include "SSEngineDefault/SSNativeKeywords.h"
 #include "SSUtilityContainer.h"

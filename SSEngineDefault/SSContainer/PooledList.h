@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <new>
 
 #include "SSEngineDefault/SSNativeKeywords.h"
 #include "SSUtilityContainer.h"
