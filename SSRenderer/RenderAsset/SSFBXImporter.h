@@ -16,6 +16,9 @@ class SSModelAsset;
 class SSPlaceableAsset;
 
 class SSFBXImporter {
+public:
+	static bool g_exportSSMaterial;
+
 private:
 	FbxManager* _FBXManager = nullptr;
 	FbxIOSettings* _IOSetting = nullptr;
@@ -37,7 +40,6 @@ public:
 private:
 
 	void ImportCurrentSceneToMaterialAsset();
-
 	void ImportCurrentSceneToModelAsset();
 	void TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset);
 

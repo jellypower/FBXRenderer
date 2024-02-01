@@ -157,7 +157,6 @@ namespace SS {
 		uint64 hashStringLen = strlen(hashString);
 
 		if (hashStringLen <= 0 || hashStringLen >= STR_LEN_MAX) {
-			assert(false);
 			return FindResult::InvalidStrKey;
 		}
 

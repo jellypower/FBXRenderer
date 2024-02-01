@@ -48,31 +48,25 @@ SSMaterialAsset::SSMaterialAsset(const char* MaterialAssetName, const char* InSh
 
 void SSMaterialAsset::InstantiateSystemBuffer()
 {
-	for (int i = 0; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
-		ConstBufferData[i] = malloc(_shaderReflectionCache->EntireCBReflectionInfo[i].CBSize);
-		ZeroMemory(ConstBufferData[i], _shaderReflectionCache->EntireCBReflectionInfo[i].CBSize);
+	for (int i = MATERIAL_PARAM_START_IDX; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
+		SystemBufferData[i] = malloc(_shaderReflectionCache->EntireCBReflectionInfo[i].CBSize);
+		ZeroMemory(SystemBufferData[i], _shaderReflectionCache->EntireCBReflectionInfo[i].CBSize);
 	}
 
 	_materialStage = MaterialAssetInstanceStage::SystemBufferInitialized;
 }
 
+void SSMaterialAsset::ReleaseSystemBuffer()
+{
+	for (int i = MATERIAL_PARAM_START_IDX; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
+		free(SystemBufferData[i]);
+	}
+}
+
 void SSMaterialAsset::Release()
 {
-
-	for (int i = 0; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
-		if (ConstantBuffers[i] != nullptr)
-			ConstantBuffers[i]->Release();
-		ConstantBuffers[i] = nullptr;
-	}
-
-	for (int i = 0; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
-		free(ConstBufferData[i]);
-	}
-
-
-	for (uint32 i = 0; i < _shaderReflectionCache->SamplerCount; i++)
-		_sampleStateList[i]->Release();
-
+	ReleaseGPUBuffer();
+	ReleaseSystemBuffer();
 
 	_materialStage = MaterialAssetInstanceStage::JustCreated;
 }
@@ -100,11 +94,11 @@ void SSMaterialAsset::BindMaterial(ID3D11DeviceContext* InDeviceContext) const
 
 	for(uint32 i=0;i<_shaderReflectionCache->TexturePoolCount;i++)
 	{
-		InDeviceContext->PSSetShaderResources(i,	1, _textureList[i]->GetSRVpp());
+		InDeviceContext->PSSetShaderResources(i,	1, _textureCache[i]->GetSRVpp());
 	}
 
 	
-	InDeviceContext->PSSetSamplers(0, _shaderReflectionCache->SamplerCount, _sampleStateList);
+	InDeviceContext->PSSetSamplers(0, _shaderReflectionCache->SamplerCount, _sampleCache);
 
 }
 
@@ -138,15 +132,24 @@ void SSMaterialAsset::InstantiateGPUBuffer(ID3D11Device* InDevice)
 	_materialStage = MaterialAssetInstanceStage::GPUBufferInitialized;
 }
 
+void SSMaterialAsset::ReleaseGPUBuffer()
+{
+	for (int i = 0; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
+		if (ConstantBuffers[i] != nullptr)
+			ConstantBuffers[i]->Release();
+		ConstantBuffers[i] = nullptr;
+	}
+}
+
 void SSMaterialAsset::UpdateSystemBuffer(int bufferIdx, const void* InData, uint32 InDataSize)
 {
 	SS_ASSERT(InDataSize == _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, "Data size not match\n");
-	memcpy_s(ConstBufferData[bufferIdx], _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, InData, InDataSize);
+	memcpy_s(SystemBufferData[bufferIdx], _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, InData, InDataSize);
 }
 
 void SSMaterialAsset::SyncGPUBuffer(ID3D11DeviceContext* InDeviceContext, uint32 bufferIdx)
 {
-	InDeviceContext->UpdateSubresource(ConstantBuffers[bufferIdx], 0, nullptr, ConstBufferData[bufferIdx], 0, 0);
+	InDeviceContext->UpdateSubresource(ConstantBuffers[bufferIdx], 0, nullptr, SystemBufferData[bufferIdx], 0, 0);
 }
 
 
@@ -154,7 +157,7 @@ void SSMaterialAsset::SyncGPUBuffer(ID3D11DeviceContext* InDeviceContext, uint32
 void SSMaterialAsset::SyncAllGPUBuffer(ID3D11DeviceContext* InDeviceContext)
 {
 	for (uint32 i = MATERIAL_PARAM_START_IDX; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
-		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, ConstBufferData[i], 0, 0);
+		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, SystemBufferData[i], 0, 0);
 	}
 }
 

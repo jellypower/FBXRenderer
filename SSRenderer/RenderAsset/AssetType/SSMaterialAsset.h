@@ -20,8 +20,9 @@ enum class MaterialAssetInstanceStage {
 class SSMaterialAsset : public SSAssetBase
 {
 	friend class SSMaterialAssetManager;
-private:
-	void* ConstBufferData[CONSTANT_BUFFER_COUNT_MAX] = { 0, };
+	friend class SSFBXImporter;
+protected:
+	void* SystemBufferData[CONSTANT_BUFFER_COUNT_MAX] = { 0, };
 
 	ID3D11Buffer* ConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
 	ID3D11Buffer* VSConstantBuffers[CONSTANT_BUFFER_COUNT_MAX] = {};
@@ -30,8 +31,9 @@ private:
 	SSShaderAsset* _shader = nullptr;
 	const SSShaderReflectionForMaterial* _shaderReflectionCache;
 
-	SSTextureAsset* _textureList[TEXTURE_COUNT_MAX];
-	ID3D11SamplerState* _sampleStateList[TEXTURE_COUNT_MAX];
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> _textureNames[TEXTURE_COUNT_MAX];
+	SSTextureAsset* _textureCache[TEXTURE_COUNT_MAX];
+	ID3D11SamplerState* _sampleCache[TEXTURE_COUNT_MAX];
 
 	MaterialAssetInstanceStage _materialStage = MaterialAssetInstanceStage::JustCreated;
 
@@ -39,8 +41,11 @@ public:
 	SSMaterialAsset(const char* MaterialAssetName, SSShaderAsset* InShaderAsset);
 	SSMaterialAsset(const char* MaterialAssetName, const char* InShaderAssetName);
 
-	void InstantiateSystemBuffer();
-	void InstantiateGPUBuffer(ID3D11Device* InDevice);
+	virtual void InstantiateSystemBuffer();
+	virtual void ReleaseSystemBuffer();
+
+	virtual void InstantiateGPUBuffer(ID3D11Device* InDevice);
+	virtual void ReleaseGPUBuffer();
 	void Release();
 
 	bool IsBindingPossible() const { return _materialStage >= MaterialAssetInstanceStage::GPUBufferInitialized; }

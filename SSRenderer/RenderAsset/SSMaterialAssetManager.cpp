@@ -1,7 +1,9 @@
 #include "SSMaterialAssetManager.h"
+
 #include "SSShaderAssetManager.h"
 #include "SSTextureAssetManager.h"
 #include "SSEngineDefault/SSDebugLogger.h"
+#include "SSRenderer/SSSamplerPool.h"
 
 SSMaterialAssetManager* SSMaterialAssetManager::g_instance = nullptr;
 
@@ -34,34 +36,30 @@ void SSMaterialAssetManager::InsertNewMaterial(SSMaterialAsset* newMaterialAsset
 
 void SSMaterialAssetManager::CreateTempMaterials(ID3D11Device* InDevice)
 {
-	SSMaterialAsset* newMaterial = DBG_NEW SSMaterialAsset("Phong", SSShaderAssetManager::FindShaderWithName("Phong"));
-	newMaterial->InstantiateGPUBuffer(InDevice);
+	SSMaterialAsset* newMaterial = DBG_NEW SSMaterialAsset("SSDefaultPbr", SSShaderAssetManager::FindShaderWithName("SSDefaultPbr"));
+	
 
 	// HACK: create texture
-	SSTextureAsset* colortTexture = SSTextureAssetManager::FindAssetWithName("Worm_SSS_Color");
-	newMaterial->_textureList[0] = colortTexture;
+	SSTextureAsset* colortTexture = SSTextureAssetManager::FindAssetWithName("rp_nathan_animated_003_dif");
+	newMaterial->_textureCache[0] = colortTexture;
 
-	// HACK: create sampler
+	// HACK: sampler
 	{
-		ID3D11SamplerState* sampler;
-		D3D11_SAMPLER_DESC sampDesc = {};
-		sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-		sampDesc.MinLOD = 0;
-		sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-		HRESULT hr = InDevice->CreateSamplerState(&sampDesc, &sampler);
-		assert(SUCCEEDED(hr));
-		newMaterial->_sampleStateList[0] = sampler;
-
+		newMaterial->_sampleCache[0] = SSSamplerPool::Get()->GetSampler(TexFilterMode::Linear, TexAddressMode::Repeat, TexAddressMode::Repeat);
 	}
 	InsertNewMaterial(newMaterial);
 }
 
-void SSMaterialAssetManager::ReleaseAllMaterialsTemp()
+void SSMaterialAssetManager::InstantiateAllMaterials(ID3D11Device* InDevice)
+{
+	for(SSMaterialAsset* materialItem :_assetPool)
+	{
+		materialItem->InstantiateSystemBuffer();
+		materialItem->InstantiateGPUBuffer(InDevice);
+	}
+}
+
+void SSMaterialAssetManager::ReleaseAllMaterials()
 {
 	for (SSMaterialAsset* item : _assetPool)
 	{

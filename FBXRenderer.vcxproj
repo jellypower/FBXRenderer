@@ -122,15 +122,16 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\FBXSDK\2020.3.4\include;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\FBXSDK\2020.3.4\include;$(ProjectDir)ExternalUtils\CapnProto\include;$(ProjectDir)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;capnp.lib;capnpc.lib;capnp-json.lib;capnp-rpc.lib;capnp-websocket.lib;kj.lib;kj-async.lib;kj-http.lib;kj-test.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\DirectXWorkspace\FBXRenderer\FBXRenderer\ExternalUtils\CapnProto\lib\Debug;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,18 +142,101 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\FBXSDK\2020.3.4\include;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\FBXSDK\2020.3.4\include;$(ProjectDir)ExternalUtils\CapnProto\include;$(ProjectDir)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;capnp.lib;capnpc.lib;capnp-json.lib;capnp-rpc.lib;capnp-websocket.lib;kj.lib;kj-async.lib;kj-http.lib;kj-test.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\DirectXWorkspace\FBXRenderer\FBXRenderer\ExternalUtils\CapnProto\lib\Release;D:\FBXSDK\2020.3.4\lib\vs2022\x64\debug;D:\DirectXWorkspace\FBXRenderer\FBXRenderer\ExternalUtils\CapnProto\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\any.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\blob.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\c++.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\capability.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\common.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\json.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\json.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\std-iterator.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\websocket-rpc.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\dynamic.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\endian.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\ez-rpc.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\generated-header-support.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\layout.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\list.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\membrane.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\message.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\orphan.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\persistent.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\pointer-helpers.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\pretty-print.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\raw-schema.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-prelude.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-twoparty.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-twoparty.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-lite.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-loader.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-parser.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-async.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-packed.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-text.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\stream.capnp.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\arena.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\array.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-inl.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-io.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-prelude.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-queue.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-unix.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-win32.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\cidr.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\common.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\gtest.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\http.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\url.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\debug.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\encoding.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\exception.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\filesystem.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\function.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\hash.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\io.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\list.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\main.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\map.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\memory.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\mutex.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\one-of.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\parse\char.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\parse\common.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\refcount.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\source-location.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\std\iostream.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\string-tree.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\string.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\table.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\test.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\thread.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\threadlocal.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\time.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\timer.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\tuple.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\units.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\vector.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\win32-api-version.h" />
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\windows-sanity.h" />
     <ClInclude Include="ExternalUtils\DDSTextureLoader.h" />
     <ClInclude Include="ExternalUtils\ExternalUtils.h">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</DeploymentContent>
@@ -162,6 +246,9 @@
     </ClInclude>
     <ClInclude Include="FBXRenderer.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Serializable\SSPbrMaterialData.capnp.h" />
+    <ClInclude Include="Serializable\SSTextureAssetManagingList.capnp.h" />
+    <ClInclude Include="Serializable\SSVector.capnp.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\FixedList.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\PooledLinkedList.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\PooledList.h" />
@@ -169,6 +256,7 @@
     <ClInclude Include="SSEngineDefault\SSContainer\CityHash.h" />
     <ClInclude Include="SSEngineDefault\SSEngineDefault.h" />
     <ClInclude Include="SSEngineDefault\SSUtilityMacros.h" />
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSMaterialAssetDetail\SSPbrMaterialAsset.h" />
     <ClInclude Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.h" />
     <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSModelCombinationAsset.h" />
     <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSAssetBase.h" />
@@ -197,13 +285,18 @@
     <ClInclude Include="SSRenderer\RenderAsset\SSTextureAssetManager.h" />
     <ClInclude Include="SSEngineDefault\SSContainer\StringHashMapA.h" />
     <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSTextureAsset.h" />
+    <ClInclude Include="SSRenderer\SSSamplerPool.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ExternalUtils\DDSTextureLoader.cpp" />
     <ClCompile Include="ExternalUtils\ExternalUtils.cpp" />
     <ClCompile Include="FBXRenderer.cpp" />
+    <ClCompile Include="Serializable\SSPbrMaterialData.capnp.c++" />
+    <ClCompile Include="Serializable\SSTextureAssetManagingList.capnp.c++" />
+    <ClCompile Include="Serializable\SSVector.capnp.c++" />
     <ClCompile Include="SSEngineDefault\SSContainer\CityHash.cpp" />
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSMaterialAssetDetail\SSPbrMaterialAsset.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSAssetBase.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSModelCombinationAsset.cpp" />
@@ -227,6 +320,7 @@
     <ClCompile Include="SSEngineDefault\SSStaticMath.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\SSTextureAssetManager.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSTextureAsset.cpp" />
+    <ClCompile Include="SSRenderer\SSSamplerPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FBXRenderer.rc" />

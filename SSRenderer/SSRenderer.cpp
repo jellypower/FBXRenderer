@@ -18,6 +18,7 @@
 
 #include <vector>
 
+#include "SSSamplerPool.h"
 #include "RenderAsset/SSModelCombinationAssetManager.h"
 
 
@@ -25,16 +26,27 @@
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\c.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedBox.fbx"
 //#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
-#define TEMP_MDLC_NAME "ExportedRoom.mdlc"
+#define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
 #define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
 
+
+NativePlatformType SSRenderer::GetNativePlatformType()
+{
+	return NativePlatformType::WindowsD3D11;
+}
+
+void* SSRenderer::GetNativeDevice()
+{
+	return _d3DDevice;
+}
 
 HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 {
@@ -72,13 +84,13 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		DriverType = driverTypes[driverTypeIndex];
 		hr = D3D11CreateDevice(nullptr, DriverType, nullptr, createDeviceFlags
 			, featureLevels, numFeatureLevels,
-			D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &_deviceContext);
+			D3D11_SDK_VERSION, &_d3DDevice, &FeatureLevel, &_deviceContext);
 
 		if (hr == E_INVALIDARG) {
 			// DirectX 11.0 platforms will not recognize D3D_FEATURE_LEVEL_11_1 so we need to retry without it
 			hr = D3D11CreateDevice(nullptr, DriverType, nullptr
 				, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1,
-				D3D11_SDK_VERSION, &D3DDevice, &FeatureLevel, &_deviceContext);
+				D3D11_SDK_VERSION, &_d3DDevice, &FeatureLevel, &_deviceContext);
 		}
 
 		if (SUCCEEDED(hr)) {
@@ -93,7 +105,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	IDXGIFactory1* dxgiFactory = nullptr;
 	{
 		IDXGIDevice* dxgiDevice = nullptr;
-		hr = D3DDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+		hr = _d3DDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
 
 		if (SUCCEEDED(hr)) {
 
@@ -115,7 +127,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	hr = dxgiFactory->QueryInterface(__uuidof(IDXGIFactory2), (void**)&dxgiFactory2);
 	if (dxgiFactory2) {
 		// DirectX 11.1 or later
-		hr = D3DDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)&D3DDevice1);
+		hr = _d3DDevice->QueryInterface(__uuidof(ID3D11Device1), (void**)&D3DDevice1);
 		if (SUCCEEDED(hr)) {
 			(void)_deviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), (void**)&DeviceContext1);
 		}
@@ -129,7 +141,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		sd.BufferCount = 1; // 스왑 체인이 소유할 버퍼의 개수를 적어준다.
 
-		hr = dxgiFactory2->CreateSwapChainForHwnd(D3DDevice, hWnd, &sd, nullptr, nullptr, &SwapChain1);
+		hr = dxgiFactory2->CreateSwapChainForHwnd(_d3DDevice, hWnd, &sd, nullptr, nullptr, &SwapChain1);
 		if (SUCCEEDED(hr))
 		{
 			hr = SwapChain1->QueryInterface(__uuidof(IDXGISwapChain), reinterpret_cast<void**>(&SwapChain));
@@ -151,7 +163,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		sd.SampleDesc.Quality = 0;
 		sd.Windowed = TRUE; // 윈도우 모드인지 풀스크린 모드인지
 
-		hr = dxgiFactory->CreateSwapChain(D3DDevice, &sd, &SwapChain);
+		hr = dxgiFactory->CreateSwapChain(_d3DDevice, &sd, &SwapChain);
 	}
 
 	// Note this tutorial doesn't handle full-screen swapchains so we block the ALT+ENTER shortcut
@@ -172,7 +184,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		return hr;
 	}
 
-	hr = D3DDevice->CreateRenderTargetView(pBackBuffer, nullptr, &RenderTargetView);
+	hr = _d3DDevice->CreateRenderTargetView(pBackBuffer, nullptr, &RenderTargetView);
 	pBackBuffer->Release();
 	if (FAILED(hr))
 		return hr;
@@ -189,7 +201,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	descDepth.CPUAccessFlags = 0;
 	descDepth.MiscFlags = 0;
-	hr = D3DDevice->CreateTexture2D(&descDepth, nullptr, &DepthStencil);
+	hr = _d3DDevice->CreateTexture2D(&descDepth, nullptr, &DepthStencil);
 
 	if (FAILED(hr)) {
 		__debugbreak();
@@ -201,7 +213,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	descDSV.Format = descDepth.Format;
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
-	hr = D3DDevice->CreateDepthStencilView(DepthStencil, &descDSV, &DepthStencilView);
+	hr = _d3DDevice->CreateDepthStencilView(DepthStencil, &descDSV, &DepthStencilView);
 	// 위에서 만든 텍스쳐로 뎁스 스텐실 "뷰"를 만듦
 	if (FAILED(hr))
 		return hr;
@@ -222,6 +234,9 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	// 셰이더 초기화 코드완료!
 	// 메테리얼 초기화, 버텍스버퍼 초기화 함수 만들기
 
+	SSSamplerPool::Instantiate();
+	SSSamplerPool::Get()->SetRenderer(this);
+
 	hr = InitShaderManager();
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG("Shader Manager init failed.");
@@ -229,18 +244,15 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	}
 
 	SSTextureAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
-	hr = SSTextureAssetManager::Get()->TempLoadTexture(D3DDevice);
+	hr = SSTextureAssetManager::Get()->LoadTextures(_d3DDevice, L"Resource/SerializeAsset/TextureList.json");
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG("Texture Loader init failed.");
 		return hr;
 	}
 
 	SSMaterialAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
-	SSMaterialAssetManager::Get()->CreateTempMaterials(D3DDevice);
-	{
-		SSMaterialAsset* mat = SSMaterialAssetManager::GetAssetWithIdx(0);
-		mat->UpdateTransform(_deviceContext, Transform());
-	}
+	SSMaterialAssetManager::Get()->CreateTempMaterials(_d3DDevice);
+
 
 	SSGeometryAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 	SSModelAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
@@ -252,11 +264,12 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		SS_CLASS_ERR_LOG();
 		return hr;
 	}
+	SSMaterialAssetManager::Get()->InstantiateAllMaterials(_d3DDevice);
 
-	hr = SSGeometryAssetManager::Get()->SendAllGeometryAssetToGPUTemp(D3DDevice);
+	hr = SSGeometryAssetManager::Get()->SendAllGeometryAssetToGPUTemp(_d3DDevice);
 	if (FAILED(hr)) {
 		SS_LOG("Error(SSRenderer): Init Geometry manager failed.\n");
-		SSMaterialAssetManager::Get()->ReleaseAllMaterialsTemp();
+		SSMaterialAssetManager::Get()->ReleaseAllMaterials();
 		return hr;
 	}
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnSystem();
@@ -276,7 +289,7 @@ HRESULT SSRenderer::InitShaderManager()
 		return hr;
 	}
 
-	SSShaderAssetManager::Get()->InstantiateAllShader(D3DDevice);
+	SSShaderAssetManager::Get()->InstantiateAllShader(_d3DDevice);
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG("Shader InstantiateGPUBuffer Failed.");
 		SS_LOG("Error(SSRenderer): Shader instantiate failed.\n");
@@ -300,7 +313,7 @@ HRESULT SSRenderer::ImportFBXFileToAssetPool()
 		SS_CLASS_ERR_LOG();
 		return hr;
 	}
-
+	
 	_fbxImporter.StoreCurrentFBXModelAssetToAssetManager();
 
 	return hr;
@@ -310,7 +323,7 @@ HRESULT SSRenderer::ImportFBXFileToAssetPool()
 void SSRenderer::InitCameraTemp()
 {
 	_renderTarget = DBG_NEW SSCamera();
-	_renderTarget->UpdateResolutionWithClientRect(D3DDevice, hWnd);
+	_renderTarget->UpdateResolutionWithClientRect(_d3DDevice, hWnd);
 	_renderTarget->GetTransform().Position = Vector4f(.0f, .0f, -5.0f, .0f);
 	_renderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - _renderTarget->GetTransform().Position);
 	_renderTarget->SetFOVWithRadians(XM_PIDIV4);
@@ -322,6 +335,7 @@ void SSRenderer::InitCameraTemp()
 
 void SSRenderer::CleanUp()
 {
+
 	SSModelCombinationAssetManager::Get()->ReleaseAllAssets();
 	SSModelCombinationAssetManager::Release();
 
@@ -331,7 +345,7 @@ void SSRenderer::CleanUp()
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnGPU();
 	SSGeometryAssetManager::Release();
 
-	SSMaterialAssetManager::Get()->ReleaseAllMaterialsTemp();
+	SSMaterialAssetManager::Get()->ReleaseAllMaterials();
 	SSMaterialAssetManager::Get()->Release();
 
 	SSTextureAssetManager::Get()->ReleaseAllTextures();
@@ -340,15 +354,15 @@ void SSRenderer::CleanUp()
 	SSShaderAssetManager::Get()->ReleaseAllShader();
 	SSShaderAssetManager::Release();
 
+	SSSamplerPool::Release();
 
-
-	// HACK:임시작업
+	// HACK: 
 	{
 		delete _renderTarget;
 	}
 
 	if (_deviceContext) _deviceContext->ClearState();
-	if (D3DDevice) D3DDevice->Release();
+	if (_d3DDevice) _d3DDevice->Release();
 	if (D3DDevice1) D3DDevice1->Release();
 	if (DeviceContext1) DeviceContext1->Release();
 	if (_deviceContext) _deviceContext->Release();

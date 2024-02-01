@@ -20,6 +20,22 @@ enum class ShaderAssetInstanceStage {
 
 class SSShaderAsset : public SSAssetBase
 {
+private:
+	ID3DBlob* VSBlob = nullptr;
+	ID3DBlob* PSBlob = nullptr;
+	ID3D11VertexShader* VertexShader = nullptr;
+	ID3D11PixelShader* PixelShader = nullptr;
+	ID3D11InputLayout* InputLayout = nullptr;
+
+	SS::FixedStringA<VS_SHADER_ENTRY_NAME_MAX_LEN> _vsShaderEntryPoint;
+	SS::FixedStringA<PS_SHADER_ENTRY_NAME_MAX_LEN> _psShaderEntryPoint;
+
+	D3D11_INPUT_ELEMENT_DESC LayoutDescArray[LAYOUT_NUM_MAX] = {};
+	CHAR SemanticStringList[LAYOUT_NUM_MAX][LAYOUT_SEMANTIC_NAME_LEN_MAX];
+	uint8 layoutElemCount = 0;
+
+	SSShaderReflectionForMaterial ShaderReflection;
+
 
 public:
 	SSShaderAsset(const char* InShaderName, const utf16* InShaderPath, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel);
@@ -39,22 +55,5 @@ public:
 
 private:
 	ShaderAssetInstanceStage _curStage = ShaderAssetInstanceStage::JustCreated;
-
-private:
-	ID3DBlob* VSBlob = nullptr;
-	ID3DBlob* PSBlob = nullptr;
-	ID3D11VertexShader* VertexShader = nullptr;
-	ID3D11PixelShader* PixelShader = nullptr;
-	ID3D11InputLayout* InputLayout = nullptr;
-
-	SS::FixedStringA<VS_SHADER_ENTRY_NAME_MAX_LEN> _vsShaderEntryPoint;
-	SS::FixedStringA<PS_SHADER_ENTRY_NAME_MAX_LEN> _psShaderEntryPoint;
-
-	D3D11_INPUT_ELEMENT_DESC LayoutDescArray[LAYOUT_NUM_MAX] = {};
-	CHAR SemanticStringList[LAYOUT_NUM_MAX][LAYOUT_SEMANTIC_NAME_LEN_MAX];
-	uint8 layoutElemCount = 0;
-
-	SSShaderReflectionForMaterial ShaderReflection;
-
 
 };

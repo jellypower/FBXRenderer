@@ -1,4 +1,5 @@
-﻿// FBXRenderer.cpp : 애플리케이션에 대한 진입점을 정의합니다.
+﻿#include "SSEngineDefault/SSContainer/PooledLinkedList.h"
+// FBXRenderer.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
 
@@ -24,12 +25,15 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 HRESULT					InitWindow(HINSTANCE, int, RECT);
 LRESULT CALLBACK		WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK		About(HWND, UINT, WPARAM, LPARAM);
-void CheckRemainingObjects();
+void					CheckRemainingObjects();
+
+void					AnalyzeCommandLineArguements();
 // HINSTANCE는 해당 어플리케이션에 해당하는 값. ("프로그램"에 대응, 똑같은 프로그램을 두 개 띄워도 HINSTANCE임)
 // HWND는 해당 어플리케이션의 하나의 "윈도우"에 해당하는 값 ("윈도우"에 대흥, 똑같은 프로그램을 두 개 띄우면 두 HWND는 다름)
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 {
+	AnalyzeCommandLineArguements();
 
 #ifdef _DEBUG
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -261,3 +265,16 @@ void CheckRemainingObjects() {
 	debug->Release();
 }
 #endif
+
+
+void AnalyzeCommandLineArguements()
+{
+	int32 argc;
+	LPWSTR* argv = CommandLineToArgvW(GetCommandLine(), &argc);
+
+	for(int32 i=0;i<argc;i++)
+	{
+		if (wcscmp(argv[i], L"g_exportSSMaterial=true") == 0) SSFBXImporter::g_exportSSMaterial = true;
+	}
+
+}

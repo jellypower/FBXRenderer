@@ -19,7 +19,7 @@ constexpr uint32 SS_UINT32_MAX = 0xffffffff;
 
 #define FORCEINLINE __forceinline
 #define PATH_LEN_MAX 260
-#define ASSET_NAME_LEN_MAX 130
+#define ASSET_NAME_LEN_MAX 128
 
 #endif
 

@@ -1,7 +1,10 @@
 #include "SSTextureAssetManager.h"
 
+#include "capnp/serialize-packed.h"
+#include "capnp/compat/json.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 #include "ExternalUtils/DDSTextureLoader.h"
+#include "Serializable/SSTextureAssetManagingList.capnp.h"
 
 using namespace DirectX;
 
@@ -20,20 +23,43 @@ SSTextureAsset* SSTextureAssetManager::FindAssetWithNameInternal(const char* nam
 	uint32 idxOut = SS_UINT32_MAX;
 	if (_assetHashmap.TryFind(name, idxOut) == FindResult::Success)
 		return _textureList[idxOut];
-	return nullptr;
+	return _textureList[0];
 }
 
 
 
-HRESULT SSTextureAssetManager::TempLoadTexture(ID3D11Device* InDevice)
+HRESULT SSTextureAssetManager::LoadTextures(ID3D11Device* InDevice, const utf16* TextureAssetListPath)
 {
-	InsertNewAsset(DBG_NEW SSTextureAsset("Teeth_Bump", "Resource/Texture/Teeth_Bump.dds"));
-	InsertNewAsset(DBG_NEW SSTextureAsset("Teeth_reflection", "Resource/Texture/Teeth_reflection.dds"));
-	InsertNewAsset(DBG_NEW SSTextureAsset("Teeth_SSS_Color", "Resource/Texture/Teeth_SSS_Color.dds"));
-	InsertNewAsset(DBG_NEW SSTextureAsset("Worm_Bump", "Resource/Texture/Worm_Bump.dds"));
-	InsertNewAsset(DBG_NEW SSTextureAsset("Worm_reflection", "Resource/Texture/Worm_reflection.dds"));
-	InsertNewAsset(DBG_NEW SSTextureAsset("Worm_SSS_Color", "Resource/Texture/Worm_SSS_Color.dds"));
+	HANDLE hFile = CreateFileW(TextureAssetListPath, GENERIC_READ, 0, nullptr, OPEN_ALWAYS, 0, nullptr);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		SS_CLASS_ERR_LOG("file open failed. Error:%d", GetLastError());
+		return E_FAIL;
+	}
 
+	kj::HandleInputStream isFile(hFile);
+	kj::Array<byte> data = isFile.readAllBytes();
+
+	capnp::MallocMessageBuilder message;
+	SSTextureAssetManagingList::Builder textureList = message.initRoot<SSTextureAssetManagingList>();
+
+	capnp::JsonCodec codec;
+	codec.decode(data.asChars(), textureList);
+
+	::capnp::List<SSTextureAssetManagingList::TextureAssetPair>::Reader texturePairList
+		= textureList.getTextureList();
+
+	const uint32 listSize = texturePairList.size();
+
+	for(uint32 i=0;i<listSize;i++)
+	{
+		InsertNewAsset(DBG_NEW SSTextureAsset(
+			texturePairList[i].getTextureName().cStr(),
+			texturePairList[i].getTexturePath().cStr()));
+		
+	}
+
+	// HACK: update on gpu buffer must be seperated
 	HRESULT hr = S_OK;
 	for(SSTextureAsset* textureItem : _textureList)
 	{

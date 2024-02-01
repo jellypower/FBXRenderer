@@ -5,6 +5,7 @@
 #include "AssetType/SSMaterialAsset.h"
 #include "SSEngineDefault/SSContainer/StringHashMapA.h"
 
+#include "Serializable/SSPbrMaterialData.capnp.h"
 
 class SSMaterialAssetManager
 {
@@ -15,6 +16,7 @@ public:
 	static FORCEINLINE uint32 GetPoolCapacity() { return g_instance->_assetPool.GetCapacity(); }
 	static FORCEINLINE SSMaterialAsset* GetAssetWithIdx(uint32 idx) { return g_instance->GetMaterialWithIdxInternal(idx); }
 	static FORCEINLINE SSMaterialAsset* FindAssetWithName(const char* name) { return g_instance->FindMaterialWithNameInternal(name); }
+	static FORCEINLINE SSMaterialAsset* GetEmptyAsset() { return g_instance->GetMaterialWithIdxInternal(0); }
 
 private:
 	static FORCEINLINE void Instantiate(uint32 poolCapacity, uint32 hashCapacity, uint32 hashCollisionLimit, uint64 hashSeed) {
@@ -44,6 +46,7 @@ private:
 	void InsertNewMaterial(SSMaterialAsset* newMaterialAsset);
 
 	void CreateTempMaterials(ID3D11Device* InDevice);
-	void ReleaseAllMaterialsTemp();
+	void InstantiateAllMaterials(ID3D11Device* InDevice);
+	void ReleaseAllMaterials();
 };
 

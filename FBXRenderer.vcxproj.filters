@@ -51,9 +51,6 @@
     <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSMaterialAsset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="SSRenderer\RenderAsset\SSTextureManager.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSCamera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -135,6 +132,273 @@
     <ClInclude Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSRenderer\RenderAsset\SSTextureAssetManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSTextureAsset.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\json.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\json.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\std-iterator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\compat\websocket-rpc.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\any.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\blob.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\c++.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\capability.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\common.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\dynamic.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\endian.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\ez-rpc.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\generated-header-support.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\layout.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\list.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\membrane.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\message.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\orphan.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\persistent.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\pointer-helpers.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\pretty-print.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\raw-schema.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-prelude.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-twoparty.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\rpc-twoparty.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-lite.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-loader.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\schema-parser.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-async.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-packed.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\serialize-text.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\capnp\stream.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\gtest.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\http.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\compat\url.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\parse\char.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\parse\common.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\std\iostream.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\arena.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\array.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-inl.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-io.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-prelude.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-queue.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-unix.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\async-win32.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\cidr.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\common.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\debug.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\encoding.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\exception.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\filesystem.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\function.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\hash.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\io.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\list.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\main.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\map.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\memory.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\mutex.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\one-of.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\refcount.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\source-location.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\string.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\string-tree.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\table.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\test.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\thread.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\threadlocal.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\time.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\timer.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\tuple.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\units.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\vector.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\win32-api-version.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalUtils\CapnProto\include\kj\windows-sanity.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Serializable\SSPbrMaterialData.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Serializable\SSVector.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\RenderAsset\AssetType\SSMaterialAssetDetail\SSPbrMaterialAsset.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SSRenderer\SSSamplerPool.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Serializable\SSTextureAssetManagingList.capnp.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">
@@ -159,9 +423,6 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSMaterialAsset.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="SSRenderer\RenderAsset\SSTextureManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSCamera.cpp">
@@ -215,6 +476,27 @@
     <ClCompile Include="SSRenderer\RenderAsset\SSModelCombinationAssetManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\SSTextureAssetManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSTextureAsset.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Serializable\SSPbrMaterialData.capnp.c++">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Serializable\SSVector.capnp.c++">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\RenderAsset\AssetType\SSMaterialAssetDetail\SSPbrMaterialAsset.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSRenderer\SSSamplerPool.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Serializable\SSTextureAssetManagingList.capnp.c++">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FBXRenderer.rc">
@@ -230,8 +512,8 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resource\Shader\Tutorial07.fxh" />
     <None Include="Resource\Shader\LambertShader.fxh" />
+    <None Include="Resource\Shader\Phong.fxh" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="SSEngineDefault\SSContainer\SSContainer.natvis" />

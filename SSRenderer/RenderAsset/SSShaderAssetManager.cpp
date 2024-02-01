@@ -46,7 +46,7 @@ void SSShaderAssetManager::InsertNewShaderAsset(SSShaderAsset* newShader)
 
 void SSShaderAssetManager::LoadNewShaderTemp()
 {
-	InsertNewShaderAsset(DBG_NEW SSShaderAsset("Phong", L"Resource/Shader/Phong.fxh", "VS", "PS", "vs_4_0"));
+	InsertNewShaderAsset(DBG_NEW SSShaderAsset("SSDefaultPbr", L"Resource/Shader/Phong.fxh", "VS", "PS", "vs_4_0"));
 }
 
 HRESULT SSShaderAssetManager::CompileAllShader()

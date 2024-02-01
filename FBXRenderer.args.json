@@ -1,0 +1,10 @@
+{
+  "FileVersion": 2,
+  "Id": "2e682c7e-2031-439e-937a-8c969764977c",
+  "Items": [
+    {
+      "Id": "bbc8fcce-3fab-4c57-a389-efe84a076626",
+      "Command": "g_exportSSMaterial=true"
+    }
+  ]
+}

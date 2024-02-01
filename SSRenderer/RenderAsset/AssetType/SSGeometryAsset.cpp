@@ -52,7 +52,7 @@ HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 
 	bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = _indexDataSize;
+	bd.ByteWidth = sizeof(uint32) * _indexDataNum;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 
@@ -81,7 +81,6 @@ void SSGeometryAsset::ReleaseGPUData()
 	if (_indexBuffer == nullptr) return;
 	_indexBuffer->Release();
 	_indexBuffer = nullptr;
-	_indexDataSize = 0;
 }
 
 void SSGeometryAsset::BindGeometry(ID3D11DeviceContext* InDeviceContext) const

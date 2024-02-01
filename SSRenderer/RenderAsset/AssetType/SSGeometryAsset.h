@@ -6,6 +6,9 @@
 
 #include "SSAssetBase.h"
 
+
+constexpr uint32 MULTIMATERIAL_COUNT_MAX = 8;
+
 struct SimpleVertex
 {
 	XMFLOAT3 Pos;
@@ -33,7 +36,6 @@ enum class EVertexUnit
 
 	VertexPerPoint, // 같은 position에 있는 놈들은 전부 1개의 정점을 공유
 	VertexPerPolygon, // 하나의 polygon(다각형)끼리 정점을 공유
-	
 };
 
 
@@ -50,9 +52,8 @@ private:
 	uint32 _vertexDataNum = 0;
 	ID3D11Buffer* _vertexBuffer = nullptr;
 
-	uint32* _indexData = nullptr;
-	uint32 _indexDataSize = 0; // == EachIndexSize * _indexDataNum
-	uint32 _eachIndexDataSize = 0;
+
+	uint32* _indexData;
 	uint32 _indexDataNum = 0;
 	ID3D11Buffer* _indexBuffer = nullptr;
 

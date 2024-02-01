@@ -32,7 +32,7 @@ private:
 
 public:
 
-	HRESULT TempLoadTexture(ID3D11Device* InDevice);
+	HRESULT LoadTextures(ID3D11Device* InDevice, const utf16* TextureAssetListPath);
 	void ReleaseAllTextures();
 	void InsertNewAsset(SSTextureAsset* newTextureAsset);
 

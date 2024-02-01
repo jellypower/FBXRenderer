@@ -11,6 +11,12 @@
 #include "RenderAsset/SSFBXImporter.h"
 
 
+enum class NativePlatformType
+{
+	WindowsD3D11,
+};
+
+
 class SSModelCombinationAsset;
 
 class SSRenderer {
@@ -19,7 +25,7 @@ private:
 	HINSTANCE hInst = NULL;
 	HWND hWnd = NULL;
 
-	ID3D11Device* D3DDevice = nullptr;
+	ID3D11Device* _d3DDevice = nullptr;
 	ID3D11Device1* D3DDevice1 = nullptr;
 	ID3D11DeviceContext* _deviceContext = nullptr;
 	ID3D11DeviceContext* DeviceContext1 = nullptr;
@@ -42,8 +48,11 @@ private:
 	float _camYRotation = 0;
 	float _camXRotation = 0;
 
-	
+
 public:
+
+	virtual NativePlatformType GetNativePlatformType();
+	void* GetNativeDevice();
 
 	HRESULT Init(HINSTANCE InhInst, HWND InhWnd);
 	HRESULT InitShaderManager();

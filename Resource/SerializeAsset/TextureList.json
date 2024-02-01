@@ -1,0 +1,41 @@
+{
+  "textureList": [
+
+    {
+      "textureName": "EMPTY",
+      "texturePath": "Resource/Texture/EMPTY.dds"
+    },
+    {
+      "textureName": "Teeth_Bump",
+      "texturePath": "Resource/Texture/Teeth_Bump.dds"
+    },
+    {
+      "textureName": "Teeth_reflection",
+      "texturePath": "Resource/Texture/Teeth_reflection.dds"
+    },
+    {
+      "textureName": "Teeth_SSS_Color",
+      "texturePath": "Resource/Texture/Teeth_SSS_Color.dds"
+    },
+    {
+      "textureName": "Worm_Bump",
+      "texturePath": "Resource/Texture/Worm_Bump.dds"
+    },
+    {
+      "textureName": "Worm_reflection",
+      "texturePath": "Resource/Texture/Worm_reflection.dds"
+    },
+    {
+      "textureName": "Worm_SSS_Color",
+      "texturePath": "Resource/Texture/Worm_SSS_Color.dds"
+    },
+    {
+      "textureName": "rp_nathan_animated_003_dif",
+      "texturePath": "Resource/Texture/rp_nathan_animated_003_dif.dds"
+    },
+    {
+      "textureName": "Torso_Base_color",
+      "texturePath": "Resource/Texture/Torso_Base_color.dds"
+    }
+  ]
+}
