@@ -9,6 +9,7 @@
 #include "SSEngineDefault/SSNativeTypes.h"
 
 #include "RenderAsset/SSFBXImporter.h"
+#include "RenderAsset/AssetType/SSMaterialAsset.h"
 
 
 enum class NativePlatformType
@@ -48,6 +49,7 @@ private:
 	float _camYRotation = 0;
 	float _camXRotation = 0;
 
+	GlobalRenderParam _globalParamContext;
 
 public:
 

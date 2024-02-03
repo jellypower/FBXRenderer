@@ -29,12 +29,12 @@
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedBox.fbx"
-//#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
+#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
-#define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
+#define TEMP_MDLC_NAME "Ancient Warrior Mixamo Rigged.mdlc"
 #define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
 
 
@@ -264,6 +264,8 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		SS_CLASS_ERR_LOG();
 		return hr;
 	}
+
+
 	SSMaterialAssetManager::Get()->InstantiateAllMaterials(_d3DDevice);
 
 	hr = SSGeometryAssetManager::Get()->SendAllGeometryAssetToGPUTemp(_d3DDevice);
@@ -313,7 +315,7 @@ HRESULT SSRenderer::ImportFBXFileToAssetPool()
 		SS_CLASS_ERR_LOG();
 		return hr;
 	}
-	
+
 	_fbxImporter.StoreCurrentFBXModelAssetToAssetManager();
 
 	return hr;
@@ -460,7 +462,8 @@ void SSRenderer::PerFrame()
 
 	_camYRotation = fmodf(_camYRotation, XM_2PI);
 	_renderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
-
+	_globalParamContext.VPMatrix = XMMatrixTranspose(_renderTarget->GetViewProjMatrix());
+	_globalParamContext.SunDirection = Vector4f(1,1,0,0);
 
 
 	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME);
@@ -476,21 +479,25 @@ void SSRenderer::PerFrame()
 void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix)
 {
 
-		// HACK: model combination을 에셋이 아니라 별도의 노드로 빼고 루트노드만 에셋으로 빼기
-		// HACK: asset->GetParent()!= nullptr 없애기
+	// HACK: model combination을 에셋이 아니라 별도의 노드로 빼고 루트노드만 에셋으로 빼기
+	// HACK: asset->GetParent()!= nullptr 없애기
 	if (asset->GetAssetType() == AssetType::ModelCombination && asset->GetParent() != nullptr)
 	{
 		const SSModelCombinationAsset* modelCombination = static_cast<const SSModelCombinationAsset*>(asset);
 		const SSModelAsset* modelAsset = modelCombination->GetModelAsset();
-		SSMaterialAsset* materialAsset = modelAsset->GetMaterial();
 
-		materialAsset->UpdateCameraGPUBufferSetting(_deviceContext, XMMatrixTranspose(_renderTarget->GetViewProjMatrix()));
-		materialAsset->UpdateTransform(_deviceContext, transformMatrix, rotMatrix);
+		for (uint8 i = 0; i < modelAsset->GetMultiMaterialCount(); i++)
+		{
+			modelAsset->BindModel(_deviceContext, i);
+			const uint32 idxStart = modelAsset->GetGeometry()->GetIndexDataStartIndex(i);
+			const uint32 IdxSize = modelAsset->GetGeometry()->GetIndexDataNum(i);
+			SSMaterialAsset* materialAsset = modelAsset->GetMaterial(i);
+			materialAsset->UpdateGlobalRenderParam(_deviceContext, _globalParamContext);
+			materialAsset->UpdateTransform(_deviceContext, transformMatrix, rotMatrix);
 
-		modelAsset->BindModel(_deviceContext);
+			_deviceContext->DrawIndexed(IdxSize, idxStart, 0);
+		}
 
-		const uint32 IdxSize = modelAsset->GetGeometry()->GetIndexDataNum();
-		_deviceContext->DrawIndexed(IdxSize, 0, 0);
 	}
 
 	for (SSPlaceableAsset* item : asset->GetChilds())

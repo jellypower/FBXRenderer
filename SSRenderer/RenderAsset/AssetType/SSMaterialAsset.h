@@ -8,6 +8,13 @@
 #include "SSEngineDefault/SSContainer/PooledList.h"
 #include "SSShaderAsset.h"
 
+
+struct alignas(16) GlobalRenderParam
+{
+	XMMATRIX VPMatrix;
+	Vector4f SunDirection;
+};
+
 class SSShaderAsset;
 class SSTextureAsset;
 
@@ -58,14 +65,9 @@ public:
 	void UpdateTransform(ID3D11DeviceContext* InDeviceContext, const Transform& InTransform);
 	void UpdateTransform(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& WMatrix, const XMMATRIX& RotMatrix);
 
-	FORCEINLINE void UpdateCameraGPUBufferSetting(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix);
+	void UpdateGlobalRenderParam(ID3D11DeviceContext* InDeviceContext, const GlobalRenderParam& InParam);
 	
 
 	FORCEINLINE MaterialAssetInstanceStage GetMaterialStage() const { return _materialStage; }
 
 };
-
-inline void SSMaterialAsset::UpdateCameraGPUBufferSetting(ID3D11DeviceContext* InDeviceContext, const XMMATRIX& InMatrix)
-{
-	InDeviceContext->UpdateSubresource(ConstantBuffers[VP_TRANSFORM_IDX], 0 ,nullptr, &InMatrix, 0 , 0);
-}

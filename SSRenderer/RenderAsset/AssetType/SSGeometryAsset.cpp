@@ -4,6 +4,22 @@
 
 #include <memory.h>
 
+static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(EGeometryDrawTopology InTopology) {
+	switch (InTopology) {
+
+	case EGeometryDrawTopology::None:
+		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+	case EGeometryDrawTopology::TriangleList:
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	case EGeometryDrawTopology::PointList:
+		return D3D10_PRIMITIVE_TOPOLOGY_POINTLIST;
+
+
+	default:
+		assert(false);
+		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+	}
+}
 
 SSGeometryAsset::SSGeometryAsset()
 	: SSAssetBase(AssetType::Geometry)
@@ -30,7 +46,7 @@ HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 
 	D3D11_BUFFER_DESC bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = _vertexDataSize;
+	bd.ByteWidth = _eachVertexDataSize * _vertexDataNum;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 
@@ -52,14 +68,13 @@ HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 
 	bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = sizeof(uint32) * _indexDataNum;
+	bd.ByteWidth = sizeof(uint32) * _wholeIndexDataNum;
 	bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 
 	InitData = {}; // 버퍼의 초기 데이터는 여기 써 넣어준다.
 	InitData.pSysMem = _indexData;
 	hr = InDevice->CreateBuffer(&bd, &InitData, &_indexBuffer);
-
 
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG(" Index buffer creation failed.");
@@ -76,14 +91,12 @@ void SSGeometryAsset::ReleaseGPUData()
 	_vertexBuffer->Release();
 	_vertexBuffer = nullptr;
 	_eachVertexDataSize = 0;
-	_vertexDataSize = 0;
 
 	if (_indexBuffer == nullptr) return;
 	_indexBuffer->Release();
-	_indexBuffer = nullptr;
 }
 
-void SSGeometryAsset::BindGeometry(ID3D11DeviceContext* InDeviceContext) const
+void SSGeometryAsset::BindGeometry(ID3D11DeviceContext* InDeviceContext, uint32 subGeomIdx) const
 {
 	uint32 offset = 0;
 	InDeviceContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &_eachVertexDataSize, &offset);

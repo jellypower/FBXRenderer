@@ -513,7 +513,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resource\Shader\LambertShader.fxh" />
-    <None Include="Resource\Shader\Phong.fxh" />
+    <None Include="Resource\Shader\SSDefaultPbr.fxh" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="SSEngineDefault\SSContainer\SSContainer.natvis" />

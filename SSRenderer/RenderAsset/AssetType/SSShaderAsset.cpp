@@ -18,17 +18,17 @@ SSShaderAsset::SSShaderAsset(const char* InShaderName, const utf16* InShaderPath
 	: SSAssetBase(AssetType::Shader)
 {
 
-	if (strlen(InShaderName) > SHADER_FILE_NAME_MAX_LEN) {
+	if (strlen(InShaderName) > ASSET_NAME_LEN_MAX) {
 		SS_LOG("Error(SSShaderAsset::SSShaderAsset): Shader file name too long\n");
 		return;
 	}
 
-	if (strlen(szVSEntryPoint) > VS_SHADER_ENTRY_NAME_MAX_LEN) {
+	if (strlen(szVSEntryPoint) > ASSET_NAME_LEN_MAX) {
 		SS_LOG("Error(SSShaderAsset::SSShaderAsset): VS Shader entry point name too long\n");
 		return;
 	}
 
-	if (strlen(szPSEntryPoint) > PS_SHADER_ENTRY_NAME_MAX_LEN) {
+	if (strlen(szPSEntryPoint) > ASSET_NAME_LEN_MAX) {
 		SS_LOG("Error(SSShaderAsset::SSShaderAsset): PS Shader entry point name too long\n");
 		return;
 	}
@@ -185,7 +185,6 @@ HRESULT SSShaderAsset::CompileShader()
 				ShaderReflection.EntireCBReflectionInfo[SlotIdx]
 					= ShaderReflection.VSCBReflectionInfo[i];
 
-				// TODO: 복사시에 어셈블리 체크하기
 
 				if (SlotIdx > ShaderReflection.ConstBufferSlotMax) {
 					ShaderReflection.ConstBufferSlotMax = SlotIdx;
@@ -239,6 +238,8 @@ HRESULT SSShaderAsset::CompileShader()
 				ShaderReflection.EntireConstBufferNum++;
 
 			}
+			else
+				ShaderReflection.EntireCBReflectionInfo[SlotIdx].bCBUsedByPSShader = true;
 
 			SS_LOG("%s\n", bufferDesc.Name);
 		}

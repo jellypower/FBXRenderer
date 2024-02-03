@@ -177,3 +177,8 @@ void SSMaterialAsset::UpdateTransform(ID3D11DeviceContext* InDeviceContext, cons
 	worldMatrix[1] = XMMatrixTranspose(RotMatrix);
 	InDeviceContext->UpdateSubresource(ConstantBuffers[W_TRANSFOMRM_IDX], 0, nullptr, worldMatrix, 0, 0);
 }
+
+void SSMaterialAsset::UpdateGlobalRenderParam(ID3D11DeviceContext* InDeviceContext, const GlobalRenderParam& InParam)
+{
+	InDeviceContext->UpdateSubresource(ConstantBuffers[GLOBAL_RENDER_PARAM_IDX], 0, nullptr, &InParam, 0, 0);
+}

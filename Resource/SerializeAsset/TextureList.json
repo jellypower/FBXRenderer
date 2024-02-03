@@ -36,6 +36,22 @@
     {
       "textureName": "Torso_Base_color",
       "texturePath": "Resource/Texture/Torso_Base_color.dds"
+    },
+    {
+      "textureName": "Helmet_Base_color",
+      "texturePath": "Resource/Texture/Helmet_Base_color.dds"
+    },
+    {
+      "textureName": "Legs_Base_color",
+      "texturePath": "Resource/Texture/Legs_Base_color.dds"
+    },
+    {
+      "textureName": "Accessories_Base_color",
+      "texturePath": "Resource/Texture/Accessories_Base_color.dds"
+    },
+    {
+      "textureName": "AncientCape_Base_color",
+      "texturePath": "Resource/Texture/AncientCape_Base_color.dds"
     }
   ]
 }

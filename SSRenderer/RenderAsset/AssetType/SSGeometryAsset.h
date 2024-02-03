@@ -7,7 +7,7 @@
 #include "SSAssetBase.h"
 
 
-constexpr uint32 MULTIMATERIAL_COUNT_MAX = 8;
+constexpr uint32 SUBGEOM_COUNT_MAX = 8;
 
 struct SimpleVertex
 {
@@ -47,14 +47,16 @@ private:
 	EVertexUnit _vertexUnit = EVertexUnit::None;
 
 	SSDefaultVertex* _vertexData = nullptr;
-	uint32 _vertexDataSize = 0; // == _eachVertexDataSize * _vertexDataNum
 	uint32 _eachVertexDataSize = 0;
 	uint32 _vertexDataNum = 0;
 	ID3D11Buffer* _vertexBuffer = nullptr;
 
 
-	uint32* _indexData;
-	uint32 _indexDataNum = 0;
+	uint8 _subGeometryNum;
+	uint32* _indexData = nullptr;
+	uint32 _indexDataNum[SUBGEOM_COUNT_MAX] = {0, };
+	uint32 _indexDataStartIndex[SUBGEOM_COUNT_MAX] = { 0, };
+	uint32 _wholeIndexDataNum = 0;
 	ID3D11Buffer* _indexBuffer = nullptr;
 
 
@@ -69,34 +71,13 @@ public:
 	bool UsableOnGPU() const { return _vertexBuffer != nullptr; }
 	void ReleaseGPUData();
 
-	bool DoesExistIndexDataOnSystem() const { return _indexData != nullptr; }
-
-
 	void SetDrawTopology(EGeometryDrawTopology InTopology) { _drawTopologyType = InTopology; }
-	void BindGeometry(ID3D11DeviceContext* InDeviceContext) const;
-
+	void BindGeometry(ID3D11DeviceContext* InDeviceContex, uint32 subGeomIdx = 0) const;
 
 public:
-	FORCEINLINE uint32 GetIndexDataNum() const { return _indexDataNum; }
+	FORCEINLINE uint8 GetSubGeometryNum() const { return _subGeometryNum; }
+	FORCEINLINE uint32 GetIndexDataStartIndex(uint32 subGeomIdx = 0) const { return _indexDataStartIndex[subGeomIdx]; }
+	FORCEINLINE uint32 GetIndexDataNum(uint32 subGeomIdx = 0) const { return _indexDataNum[subGeomIdx]; }
 	
 
 };
-
-
-static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(EGeometryDrawTopology InTopology) {
-	switch (InTopology) {
-
-	case EGeometryDrawTopology::None:
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	case EGeometryDrawTopology::TriangleList:
-		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case EGeometryDrawTopology::PointList:
-		return D3D10_PRIMITIVE_TOPOLOGY_POINTLIST;
-
-
-	default:
-		assert(false);
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	}
-}
-

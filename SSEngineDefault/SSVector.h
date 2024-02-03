@@ -37,31 +37,31 @@ struct Vector4f {
 	static const Vector4f Half;
 };
 
-FORCEINLINE const Vector4f& operator+(const Vector4f& lhs, const Vector4f& rhs) {
+FORCEINLINE Vector4f operator+(const Vector4f& lhs, const Vector4f& rhs) {
 	return lhs.SimdVec + rhs.SimdVec;
 }
 
-FORCEINLINE const Vector4f& operator-(const Vector4f& lhs, const Vector4f& rhs) {
+FORCEINLINE Vector4f operator-(const Vector4f& lhs, const Vector4f& rhs) {
 	return lhs.SimdVec - rhs.SimdVec;
 }
 
-FORCEINLINE const Vector4f& operator*(const Vector4f& lhs, const Vector4f& rhs) {
+FORCEINLINE Vector4f operator*(const Vector4f& lhs, const Vector4f& rhs) {
 	return lhs.SimdVec * rhs.SimdVec;
 }
 
-FORCEINLINE const Vector4f& operator*(const Vector4f& lhs, float rhs) {
+FORCEINLINE Vector4f operator*(const Vector4f& lhs, float rhs) {
 	return lhs.SimdVec * rhs;
 }
 
-FORCEINLINE const Vector4f& operator*(float lhs, const Vector4f& rhs) {
+FORCEINLINE Vector4f operator*(float lhs, const Vector4f& rhs) {
 	return lhs * rhs.SimdVec;
 }
 
-FORCEINLINE const Vector4f& operator/(const Vector4f& lhs, float rhs) {
+FORCEINLINE Vector4f operator/(const Vector4f& lhs, float rhs) {
 	return lhs.SimdVec / rhs;
 }
 
-FORCEINLINE const Vector4f& operator-(const Vector4f& inVal) {
+FORCEINLINE Vector4f operator-(const Vector4f& inVal) {
 	return -inVal.SimdVec;
 }
 
@@ -77,7 +77,6 @@ FORCEINLINE float Vector4f::Get3DLength()
 
 FORCEINLINE float Vector4f::Get3DSqrLength()
 {
-
 	return XMVector3Length(SimdVec).m128_f32[0];
 }
 
@@ -96,6 +95,9 @@ struct Vector2f {
 	static const Vector2f Zero;
 };
 
+FORCEINLINE Vector2f operator-(const Vector2f& lhs, const Vector2f& rhs) {
+	return Vector2f(lhs.X - rhs.X, lhs.Y - rhs.Y);
+}
 
 
 struct Quaternion {

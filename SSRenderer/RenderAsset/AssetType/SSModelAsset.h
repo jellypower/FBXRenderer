@@ -14,17 +14,21 @@ class SSModelAsset : public SSAssetBase
 private:
 
 	SSGeometryAsset* _geometry = nullptr;
-	SSMaterialAsset* _material = nullptr;
+	SSMaterialAsset* _multiMaterialList[SUBGEOM_COUNT_MAX] = { 0, };
 
 public:
-	SSModelAsset(const char* InAssetName, SSGeometryAsset* InGeometry, SSMaterialAsset* InMaterial);
-	SSModelAsset(const char* InAssetName, const char* InGeometryName, const char* InMaterialName);
+	SSModelAsset(const char* InAssetName, SSGeometryAsset* InGeometry);
+	SSModelAsset(const char* InAssetName, const char* InGeometryName);
 	virtual ~SSModelAsset() override;
 
 	FORCEINLINE SSGeometryAsset* GetGeometry() const { return _geometry;  }
-	FORCEINLINE SSMaterialAsset* GetMaterial() const { return _material; }
 
-	void BindModel(ID3D11DeviceContext* InDeviceContext) const;
+	void SetMaterial(SSMaterialAsset* InMaterial, uint32 matIdx);
+	void SetMaterial(const char* InMaterialName, uint32 matIdx);
+	FORCEINLINE SSMaterialAsset* GetMaterial(uint32 subMatIdx=0) const { return _multiMaterialList[subMatIdx]; }
+	FORCEINLINE uint8 GetMultiMaterialCount() const { return _geometry->GetSubGeometryNum(); }
+
+	void BindModel(ID3D11DeviceContext* InDeviceContext, uint32 multiMatIdx = 0) const;
 
 
 

@@ -15,12 +15,14 @@ cbuffer ModelBuffer : register(b0)
     matrix RotMatrix;
 };
 
-cbuffer CameraBuffer : register(b1)
+cbuffer GlobalRenderParam : register(b1)
 {
     matrix VPMatrix;
+    float3 SunDirection;
 };
 
-cbuffer MaterialConstants : register(b2)
+
+cbuffer MaterialParam : register(b2)
 {
     float4 baseColorFactor;
     float3 emissiveFactor;
@@ -92,19 +94,8 @@ float4 PS(PS_INPUT input) : SV_Target
     float4 baseColor = baseColorFactor * txBaseColor.Sample(samLinear, 0);
     float2 metallic = metallicRoughnessFactor * txMetallic.Sample(samLinear, 0).bg;
     float3 emissive = emissiveFactor * txEmissive.Sample(samLinear, 0);
-//    float3 normal = 
 
-
-
-
-
-
-
-
-
-
-    float3 LightDir = normalize(float3(-1, 1, 0));
-    LightDir = normalize(LightDir);
+    float3 LightDir = normalize(SunDirection);
 
     const float DIFFUSE_COEFF = 0.7;
     const float AMBIENT_COEFF = 0.3;
