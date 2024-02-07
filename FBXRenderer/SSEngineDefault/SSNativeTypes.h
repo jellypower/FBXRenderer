@@ -3,8 +3,8 @@
 
 #ifdef _WINDOWS
 #include <DirectXMath.h>
-#include "SSEngineDefault/SSNativeKeywords.h"
-#include "SSEngineDefault/SSVector.h"
+#include "SSNativeKeywords.h"
+#include "SSVector.h"
 
 
 

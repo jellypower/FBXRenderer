@@ -22,17 +22,16 @@
 #include "RenderAsset/SSModelCombinationAssetManager.h"
 
 
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\a.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\b.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\c.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXSDK\\2020.3.4\\samples\\Normals\\Normals.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedBox.fbx"
-//#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\a.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\b.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\c.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedRoom.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedRoom02.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedBox.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\PSController.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\rp_nathan_animated_003_walking.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Frew Worm Monster.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
 #define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
 #define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
@@ -136,10 +135,10 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		sd.Width = width;
 		sd.Height = height;
 		sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		sd.SampleDesc.Count = 1; // ¸ÖÆ¼»ùÇÃ¸µ(Anti Aliasing °ü·Ã ¿É¼Çµé)
+		sd.SampleDesc.Count = 1; // ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½Ã¸ï¿½(Anti Aliasing ï¿½ï¿½ï¿½ï¿½ ï¿½É¼Çµï¿½)
 		sd.SampleDesc.Quality = 0;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.BufferCount = 1; // ½º¿Ò Ã¼ÀÎÀÌ ¼ÒÀ¯ÇÒ ¹öÆÛÀÇ °³¼ö¸¦ Àû¾îÁØ´Ù.
+		sd.BufferCount = 1; // ï¿½ï¿½ï¿½ï¿½ Ã¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø´ï¿½.
 
 		hr = dxgiFactory2->CreateSwapChainForHwnd(_d3DDevice, hWnd, &sd, nullptr, nullptr, &SwapChain1);
 		if (SUCCEEDED(hr))
@@ -151,17 +150,17 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	else {
 		//	DirectX 11.0 version
 		DXGI_SWAP_CHAIN_DESC sd = {};
-		sd.BufferCount = 1; // º¸Åë ÇÁ·ÐÆ®¹öÆÛ¸¦ Æ÷ÇÔÇÑ ÃÑ ¹öÆÛÀÇ °³¼ö¸¦ Àû¾îÁØ´Ù. 
+		sd.BufferCount = 1; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½Û¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ø´ï¿½. 
 		sd.BufferDesc.Width = width;
 		sd.BufferDesc.Height = height;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // ½º¿ÒÃ¼ÀÎ ÄÃ·¯Æ÷¸Ë
-		sd.BufferDesc.RefreshRate.Numerator = 60; // 60ÇÁ·¹ÀÓ
+		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // ï¿½ï¿½ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½
+		sd.BufferDesc.RefreshRate.Numerator = 60; // 60ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		sd.BufferDesc.RefreshRate.Denominator = 1;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		sd.OutputWindow = hWnd;
-		sd.SampleDesc.Count = 1; // SampleDesc: ¸ÖÆ¼»ùÇÃ¸µ ¿É¼Çµé(MSAA)
+		sd.SampleDesc.Count = 1; // SampleDesc: ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½Ã¸ï¿½ ï¿½É¼Çµï¿½(MSAA)
 		sd.SampleDesc.Quality = 0;
-		sd.Windowed = TRUE; // À©µµ¿ì ¸ðµåÀÎÁö Ç®½ºÅ©¸° ¸ðµåÀÎÁö
+		sd.Windowed = TRUE; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 		hr = dxgiFactory->CreateSwapChain(_d3DDevice, &sd, &SwapChain);
 	}
@@ -214,7 +213,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
 	hr = _d3DDevice->CreateDepthStencilView(DepthStencil, &descDSV, &DepthStencilView);
-	// À§¿¡¼­ ¸¸µç ÅØ½ºÃÄ·Î µª½º ½ºÅÙ½Ç "ºä"¸¦ ¸¸µê
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½ï¿½Ä·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ù½ï¿½ "ï¿½ï¿½"ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	if (FAILED(hr))
 		return hr;
 
@@ -231,8 +230,8 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	vp.TopLeftY = 0;
 	_deviceContext->RSSetViewports(1, &vp);
 
-	// ¼ÎÀÌ´õ ÃÊ±âÈ­ ÄÚµå¿Ï·á!
-	// ¸ÞÅ×¸®¾ó ÃÊ±âÈ­, ¹öÅØ½º¹öÆÛ ÃÊ±âÈ­ ÇÔ¼ö ¸¸µé±â
+	// ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½Ê±ï¿½È­ ï¿½Úµï¿½Ï·ï¿½!
+	// ï¿½ï¿½ï¿½×¸ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­, ï¿½ï¿½ï¿½Ø½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	SSSamplerPool::Instantiate();
 	SSSamplerPool::Get()->SetRenderer(this);
@@ -480,8 +479,8 @@ void SSRenderer::PerFrame()
 void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix)
 {
 
-	// HACK: model combinationÀ» ¿¡¼ÂÀÌ ¾Æ´Ï¶ó º°µµÀÇ ³ëµå·Î »©°í ·çÆ®³ëµå¸¸ ¿¡¼ÂÀ¸·Î »©±â
-	// HACK: asset->GetParent()!= nullptr ¾ø¾Ö±â
+	// HACK: model combinationï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´Ï¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½å¸¸ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// HACK: asset->GetParent()!= nullptr ï¿½ï¿½ï¿½Ö±ï¿½
 	if (asset->GetAssetType() == AssetType::ModelCombination && asset->GetParent() != nullptr)
 	{
 		const SSModelCombinationAsset* modelCombination = static_cast<const SSModelCombinationAsset*>(asset);
