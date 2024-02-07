@@ -26,6 +26,11 @@ public:
 	static FORCEINLINE SSTextureAsset* FindAssetWithName(const char* name) { return g_instance->FindAssetWithNameInternal(name); }
 	static FORCEINLINE SSTextureAsset* GetAssetWithIdx(uint32 idx) { return g_instance->_textureList[idx]; }
 
+	static constexpr char EmptyTextureName[] = "EMPTY";
+	static constexpr char BlackTextureName[] = "BLACK";
+	static constexpr char WhiteTextureName[] = "WHITE";
+	static constexpr char EmptyNormalTextureName[] = "EMPTYNORMAL";
+
 private:
 	SS::PooledList<SSTextureAsset*> _textureList;
 	SS::StringHashMapA<uint32, ASSET_NAME_LEN_MAX> _assetHashmap;

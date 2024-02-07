@@ -34,7 +34,7 @@ public:
 		return g_instance->GetShaderAssetWithIdxInternal(idx);
 	}
 
-
+	static constexpr char SSDefaultPbrShaderName[] = "SSDefaultPbr";
 
 
 

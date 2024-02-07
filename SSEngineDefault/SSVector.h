@@ -22,7 +22,7 @@ struct Vector4f {
 	Vector4f();
 	Vector4f(XMVECTOR InXMVECTOR);
 	Vector4f(float InX, float InY, float InZ, float InW);
-	FORCEINLINE Vector4f GetNormalized();
+	FORCEINLINE Vector4f Get3DNormalized();
 	FORCEINLINE float Get3DLength();
 	FORCEINLINE float Get3DSqrLength();
 
@@ -65,7 +65,7 @@ FORCEINLINE Vector4f operator-(const Vector4f& inVal) {
 	return -inVal.SimdVec;
 }
 
-FORCEINLINE Vector4f Vector4f::GetNormalized()
+FORCEINLINE Vector4f Vector4f::Get3DNormalized()
 {
 	return SimdVec / Get3DLength();
 }
@@ -77,7 +77,7 @@ FORCEINLINE float Vector4f::Get3DLength()
 
 FORCEINLINE float Vector4f::Get3DSqrLength()
 {
-	return XMVector3Length(SimdVec).m128_f32[0];
+	return XMVector3LengthSq(SimdVec).m128_f32[0];
 }
 
 
@@ -93,6 +93,7 @@ struct Vector2f {
 	Vector2f(float InX, float InY);
 
 	static const Vector2f Zero;
+	static const Vector2f One;
 };
 
 FORCEINLINE Vector2f operator-(const Vector2f& lhs, const Vector2f& rhs) {

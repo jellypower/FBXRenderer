@@ -48,6 +48,7 @@ HRESULT SSShaderAsset::CompileShader()
 		ExternalUtils::CompileShaderFromFile(_assetPath, _vsShaderEntryPoint, "vs_4_0", &VSBlob);
 
 	if (FAILED(hr)) {
+		
 		WSS_CLASS_ERR_LOG("(Vertex Shader: %ls)The shader file cannot be compiled. Please run this executable"
 			" from the directory that contains the FX file.\n", _assetPath.GetData());
 		return hr;
@@ -139,7 +140,7 @@ HRESULT SSShaderAsset::CompileShader()
 				if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32)		LayoutDescArray[i].Format = DXGI_FORMAT_R32G32B32_UINT;
 				else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32)	LayoutDescArray[i].Format = DXGI_FORMAT_R32G32B32_SINT;
 				else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) LayoutDescArray[i].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-				byteOffset += 12;
+				byteOffset += 16;
 			}
 			else if (paramDesc.Mask <= 15) {
 				if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32)		LayoutDescArray[i].Format = DXGI_FORMAT_R32G32B32A32_UINT;
@@ -244,12 +245,11 @@ HRESULT SSShaderAsset::CompileShader()
 			SS_LOG("%s\n", bufferDesc.Name);
 		}
 
-		// TODO: 나중에 VS셰이더에 텍스쳐가 필요할 수도 있음
 		// 04. PS Texture and Sampler reflection
 		ShaderReflection.TexturePoolCount = 0;
 		ShaderReflection.SamplerCount = 0;
 
-		for (int i = 0; i < PSShaderDesc.BoundResources; i++) {
+		for (uint32 i = 0; i < PSShaderDesc.BoundResources; i++) {
 
 			D3D11_SHADER_INPUT_BIND_DESC bufdesc;
 			hr = PixelShaderReflection->GetResourceBindingDesc(i, &bufdesc);

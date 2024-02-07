@@ -13,6 +13,8 @@ struct alignas(16) GlobalRenderParam
 {
 	XMMATRIX VPMatrix;
 	Vector4f SunDirection;
+	Vector4f SunIntensity;
+	Vector4f ViewerPos;
 };
 
 class SSShaderAsset;

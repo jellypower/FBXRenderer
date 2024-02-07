@@ -1,4 +1,6 @@
 #pragma once
+#include "SSEngineDefault/SSDebugLogger.h"
+
 #include <d3dcompiler.h>
 
 
@@ -27,7 +29,7 @@ namespace ExternalUtils
         {
             if (pErrorBlob)
             {
-                OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+                SS_LOG("Compile Error:\n %s\n", reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
                 pErrorBlob->Release();
             }
             return hr;

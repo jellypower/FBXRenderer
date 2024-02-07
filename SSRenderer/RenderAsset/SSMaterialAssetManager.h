@@ -46,7 +46,7 @@ private:
 	void InsertNewMaterial(SSMaterialAsset* newMaterialAsset);
 
 	void CreateTempMaterials(ID3D11Device* InDevice);
-	void InstantiateAllMaterials(ID3D11Device* InDevice);
+	void InstantiateAllMaterials(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext);
 	void ReleaseAllMaterials();
 };
 

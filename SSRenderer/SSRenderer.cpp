@@ -29,12 +29,12 @@
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedRoom02.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\ExportedBox.fbx"
-#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
+//#define TEMP_FBX_MODEL_PATH  "D:\\DirectXWorkspace\\OpenFBX\\runtime\\PSController.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\rp_nathan_animated_003_walking.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Frew Worm Monster.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\DirectXWorkspace\\OpenFBX\\runtime\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
-#define TEMP_MDLC_NAME "Ancient Warrior Mixamo Rigged.mdlc"
+#define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
 #define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
 
 
@@ -266,7 +266,7 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	}
 
 
-	SSMaterialAssetManager::Get()->InstantiateAllMaterials(_d3DDevice);
+	SSMaterialAssetManager::Get()->InstantiateAllMaterials(_d3DDevice, _deviceContext);
 
 	hr = SSGeometryAssetManager::Get()->SendAllGeometryAssetToGPUTemp(_d3DDevice);
 	if (FAILED(hr)) {
@@ -464,6 +464,7 @@ void SSRenderer::PerFrame()
 	_renderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
 	_globalParamContext.VPMatrix = XMMatrixTranspose(_renderTarget->GetViewProjMatrix());
 	_globalParamContext.SunDirection = Vector4f(1,1,0,0);
+	_globalParamContext.SunIntensity = Vector4f::One * 0.05;
 
 
 	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME);

@@ -1,15 +1,23 @@
 #include "SSPbrMaterialAsset.h"
 
 #include "SSRenderer/RenderAsset/SSTextureAssetManager.h"
+#include "SSRenderer/RenderAsset/SSShaderAssetManager.h"
 
 
-SSPbrMaterialAsset::SSPbrMaterialAsset(const char* MaterialAssetName, SSShaderAsset* InShaderAsset)
-	: SSMaterialAsset(MaterialAssetName, InShaderAsset)
-{ }
+SSPbrMaterialAsset::SSPbrMaterialAsset(const char* MaterialAssetName)
+	: SSMaterialAsset(MaterialAssetName, SSShaderAssetManager::SSDefaultPbrShaderName)
+{
+	_textureNames[TX_BASE_COLOR_IDX] = SSTextureAssetManager::EmptyTextureName;
+	_textureNames[TX_NORMAL_IDX] = SSTextureAssetManager::EmptyNormalTextureName;
+	_textureNames[TX_METALLIC_IDX] = SSTextureAssetManager::BlackTextureName;
+	_textureNames[TX_EMISSIVE_IDX] = SSTextureAssetManager::BlackTextureName;
+	_textureNames[TX_OCCLUSION_IDX] = SSTextureAssetManager::WhiteTextureName;
 
-SSPbrMaterialAsset::SSPbrMaterialAsset(const char* MaterialAssetName, const char* InShaderAssetName)
-	: SSMaterialAsset(MaterialAssetName, InShaderAssetName)
-{ }
+	_constantBuffer.baseColorFactor = Vector4f::One;
+	_constantBuffer.emissiveFactor = Vector4f::One * 0.3;
+	_constantBuffer.normalTextureScale = 1;
+	_constantBuffer.metallicRoughnessFactor = Vector2f::One;
+}
 
 void SSPbrMaterialAsset::InstantiateSystemBuffer()
 {
@@ -26,7 +34,8 @@ void SSPbrMaterialAsset::InstantiateGPUBuffer(ID3D11Device* InDevice)
 	SSMaterialAsset::InstantiateGPUBuffer(InDevice);
 
 	_textureCache[TX_BASE_COLOR_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_BASE_COLOR_IDX]);
+	_textureCache[TX_NORMAL_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_NORMAL_IDX]);
 	_textureCache[TX_METALLIC_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_METALLIC_IDX]);
 	_textureCache[TX_EMISSIVE_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_EMISSIVE_IDX]);
-	_textureCache[TX_NORMAL_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_NORMAL_IDX]);
+	_textureCache[TX_OCCLUSION_IDX] = SSTextureAssetManager::FindAssetWithName(_textureNames[TX_OCCLUSION_IDX]);
 }

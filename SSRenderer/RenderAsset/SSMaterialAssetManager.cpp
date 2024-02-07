@@ -2,6 +2,7 @@
 
 #include "SSShaderAssetManager.h"
 #include "SSTextureAssetManager.h"
+#include "AssetType/SSMaterialAssetDetail/SSPbrMaterialAsset.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 #include "SSRenderer/SSSamplerPool.h"
 
@@ -32,16 +33,16 @@ void SSMaterialAssetManager::InsertNewMaterial(SSMaterialAsset* newMaterialAsset
 	_assetPool.PushBack(newMaterialAsset);
 	InsertResult result = _assetHash.TryInsert(newMaterialAsset->GetAssetName(), _assetPool.GetSize() - 1);
 	WASSERT_WITH_MESSAGE(result == InsertResult::Success, "new material insertion failed");
+
 }
 
 void SSMaterialAssetManager::CreateTempMaterials(ID3D11Device* InDevice)
 {
-	SSMaterialAsset* newMaterial = DBG_NEW SSMaterialAsset("SSDefaultPbr", SSShaderAssetManager::FindShaderWithName("SSDefaultPbr"));
+	SSMaterialAsset* newMaterial = DBG_NEW SSPbrMaterialAsset("SSDefaultPbr");
 	
 
 	// HACK: create texture
 	SSTextureAsset* colortTexture = SSTextureAssetManager::FindAssetWithName("rp_nathan_animated_003_dif");
-	newMaterial->_textureCache[0] = colortTexture;
 
 	// HACK: sampler
 	{
@@ -50,12 +51,13 @@ void SSMaterialAssetManager::CreateTempMaterials(ID3D11Device* InDevice)
 	InsertNewMaterial(newMaterial);
 }
 
-void SSMaterialAssetManager::InstantiateAllMaterials(ID3D11Device* InDevice)
+void SSMaterialAssetManager::InstantiateAllMaterials(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext)
 {
 	for(SSMaterialAsset* materialItem :_assetPool)
 	{
 		materialItem->InstantiateSystemBuffer();
 		materialItem->InstantiateGPUBuffer(InDevice);
+		materialItem->SyncAllGPUBuffer(InDeviceContext);
 	}
 }
 
