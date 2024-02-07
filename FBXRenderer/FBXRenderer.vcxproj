@@ -131,7 +131,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;capnp.lib;capnpc.lib;capnp-json.lib;capnp-rpc.lib;capnp-websocket.lib;kj.lib;kj-async.lib;kj-http.lib;kj-test.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Graphics\FBXRenderer\FBXRenderer\ExternalUtils\FBXSDK\lib\$(IntDir);D:\Graphics\FBXRenderer\FBXRenderer\ExternalUtils\CapnProto\lib\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)\ExternalUtils\FBXSDK\lib\$(IntDir);$(ProjectDir)\ExternalUtils\CapnProto\lib\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;comctl32.lib;libfbxsdk.lib;capnp.lib;capnpc.lib;capnp-json.lib;capnp-rpc.lib;capnp-websocket.lib;kj.lib;kj-async.lib;kj-http.lib;kj-test.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\Graphics\FBXRenderer\FBXRenderer\ExternalUtils\FBXSDK\lib\$(IntDir);D:\Graphics\FBXRenderer\FBXRenderer\ExternalUtils\CapnProto\lib\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)\ExternalUtils\FBXSDK\lib\$(IntDir);$(ProjectDir)\ExternalUtils\CapnProto\lib\$(IntDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

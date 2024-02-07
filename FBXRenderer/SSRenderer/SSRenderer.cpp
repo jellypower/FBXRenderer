@@ -30,10 +30,10 @@
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedBox.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\PSController.fbx"
 //#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\rp_nathan_animated_003_walking.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Frew Worm Monster.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
+//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Frew Worm Monster.fbx"
+#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
-#define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
+#define TEMP_MDLC_NAME "Ancient Warrior Mixamo Rigged.mdlc"
 #define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
 
 
