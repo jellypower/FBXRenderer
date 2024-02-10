@@ -9,14 +9,14 @@ SSPbrMaterialAsset::SSPbrMaterialAsset(const char* MaterialAssetName)
 {
 	_textureNames[TX_BASE_COLOR_IDX] = SSTextureAssetManager::EmptyTextureName;
 	_textureNames[TX_NORMAL_IDX] = SSTextureAssetManager::EmptyNormalTextureName;
-	_textureNames[TX_METALLIC_IDX] = SSTextureAssetManager::BlackTextureName;
-	_textureNames[TX_EMISSIVE_IDX] = SSTextureAssetManager::BlackTextureName;
+	_textureNames[TX_METALLIC_IDX] = SSTextureAssetManager::WhiteTextureName;
+	_textureNames[TX_EMISSIVE_IDX] = SSTextureAssetManager::WhiteTextureName;
 	_textureNames[TX_OCCLUSION_IDX] = SSTextureAssetManager::WhiteTextureName;
 
 	_constantBuffer.baseColorFactor = Vector4f::One;
-	_constantBuffer.emissiveFactor = Vector4f::One * 0.3;
+	_constantBuffer.emissiveFactor = Vector4f::Zero;
 	_constantBuffer.normalTextureScale = 1;
-	_constantBuffer.metallicRoughnessFactor = Vector2f::One;
+	_constantBuffer.metallicRoughnessFactor = Vector2f(0, 0);
 }
 
 void SSPbrMaterialAsset::InstantiateSystemBuffer()

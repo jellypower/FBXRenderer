@@ -23,7 +23,7 @@ namespace SSFbxName
 	constexpr char BumpMap[] = "bump_map";
 	constexpr char MetalnessMap[] = "metalness_map";
 	constexpr char Metalness[] = "metalness";
-	constexpr char EmitColorMap[] = "emit_color_map";
+	constexpr char EmissiveColor[] = "EmissiveColor";
 }
 
 
@@ -175,6 +175,7 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 			pbrMaterial->SetBaseColorFactor(Vector4f(diffuseFactor[0], diffuseFactor[1], diffuseFactor[2], 1));
 		}
 
+
 		prop = material->FindProperty(FbxSurfaceMaterial::sEmissiveFactor);
 		if (prop.IsValid())
 		{
@@ -186,7 +187,7 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 
 		for (prop = material->GetFirstProperty(); prop.IsValid(); prop = material->GetNextProperty(prop))
 		{
-			SS_LOG("\t\t%s: %d\n", prop.GetNameAsCStr(), prop.GetSrcObjectCount());
+			SS_LOG("\t\t%s: %s\n", prop.GetNameAsCStr(), prop.GetPropertyDataType().GetName());
 
 			if (strcmp(prop.GetNameAsCStr(), SSFbxName::BumpMap) == 0)
 			{

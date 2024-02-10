@@ -77,6 +77,19 @@ PS_INPUT VS(VS_INPUT input)
 
 
 // =====================================================================================================
+struct SurfaceProperties
+{
+    float3 N;
+    float3 V;
+    float3 c_diff;
+    float3 c_spec;
+    float roughness;
+    float alpha; // roughness squared
+    float alphaSqr; // alpha squared
+    float NdotV;
+};
+
+static const float PI = 3.14159265;
 static const float3 kDielectricSpecular = float3(0.04, 0.04, 0.04);
 // 유전체(dielectric material)는 전기장 안에서 극성을 지니게 되는 절연체이다.
 
@@ -112,24 +125,36 @@ float Fresnel_Shlick(float F0, float F90, float cosine)
     return lerp(F0, F90, Pow5(1.0 - cosine));
 }
 
-
-float3 ComputeDiffuse(float3 Diffuse, float3 N, float V, float NdotV,float Roughness)
+// GGX specular D (normal distribution)
+float Specular_D_GGX(SurfaceProperties Surface, float3 L)
 {
-    float LdotH = saturate(dot(N, normalize(N + V)));
+    float3 H = normalize(Surface.V + L);
+    float NdotH = dot(Surface.N, H);
 
+    float lower = lerp(1, Surface.alphaSqr, NdotH * NdotH);
+    return Surface.alphaSqr / max(1e-6, PI * lower * lower);
+}
 
-    float fd90 = 0.5 + 2.0 * Roughness * LdotH * LdotH;
-    
-    float3 DiffuseBurley = Diffuse * Fresnel_Shlick(1, fd90, NdotV);
+// Schlick-Smith specular geometric visibility function
+float G_Schlick_Smith(SurfaceProperties Surface, float3 L)
+{
+    float NdotL = dot(Surface.N, L);
+    return 1.0 / max(1e-6, lerp(Surface.NdotV, 1, Surface.alpha * 0.5) * lerp(NdotL, 1, Surface.alpha * 0.5));
+}
+
+float3 ComputeDiffuse(SurfaceProperties surface)
+{
+    float LdotH = saturate(dot(surface.N, normalize(surface.N + surface.V)));
+    float fd90 = 0.5 + 2.0 * surface.roughness * LdotH * LdotH;
+    float3 DiffuseBurley = surface.c_diff * Fresnel_Shlick(1, fd90, surface.NdotV);
 
     return DiffuseBurley;
 }
 
-float3 ComputeSpecular(float3 Specular, float3 N, float3 V)
+float3 ComputeSpecular(SurfaceProperties surface)
 {
-    
-    float NdotV = saturate(dot(N, V));
-    float3 specular = Fresnel_Shlick(Specular, 1, NdotV);
+    float G_V = surface.NdotV + sqrt((surface.NdotV - surface.NdotV * surface.alphaSqr) * surface.NdotV + surface.alphaSqr);
+    float3 specular = Fresnel_Shlick(surface.c_spec, 1, surface.NdotV);
     
 	return specular;
 
@@ -144,46 +169,41 @@ float4 PS(PS_INPUT input) : SV_Target
     float4 emissiveSample = txEmissive.Sample(samLinear, input.UV0);
     float3 emissive = emissiveFactor * emissiveSample.rgb * emissiveSample.a;
 
-    float3 LightDir = normalize(SunDirection);
+    float3 L = normalize(SunDirection);
 
-    const float DIFFUSE_COEFF = 0.7;
-    const float AMBIENT_COEFF = 0.3;
 
-    float3 normal = ComputeNormal(input);
-    float3 view = normalize(ViewerPos - input.WorldPos);
-    float3 NdotV = saturate(dot(normal, view));
-    float3 diffuseColor = baseColor.rgb * (1 - kDielectricSpecular) * (1 - metallic.x) * occlusion;
-    float3 specularColor = lerp(kDielectricSpecular, baseColor.rgb, metallic.x) * occlusion;
-    float roughness = metallic.y;
-    float alpha = metallic.y * metallic.y;
-    float alphaSqr = alpha * alpha;
+    SurfaceProperties surface;
+    surface.N = ComputeNormal(input);
+    surface.V = normalize(ViewerPos - input.WorldPos);
+    surface.NdotV = saturate(dot(surface.N, surface.V));
+    surface.c_diff = baseColor.rgb * (1 - kDielectricSpecular) * (1 - metallic.x) * occlusion;
+    surface.c_spec = lerp(kDielectricSpecular, baseColor.rgb, metallic.x) * occlusion;
+    surface.roughness = metallic.y;
+    surface.alpha = metallic.y * metallic.y;
+    surface.alphaSqr = surface.alpha * surface.alpha;
 
     float3 colorAccum = emissive;
+    
+    float3 H = normalize(surface.V + L);
+    float VdotH = dot(surface.V, H);
+    float k_s = Fresnel_Shlick(metallic.x, 1, VdotH);
+    float k_d = 1 - k_s;
 
-    diffuseColor = ComputeDiffuse(diffuseColor, normal, view, NdotV, roughness);
-    specularColor = ComputeSpecular(specularColor, normal, view);
+    float3 lambert = baseColor;
 
-    colorAccum += diffuseColor;
-    colorAccum += specularColor;
+    float NdotL = saturate(dot(surface.N, L));
+
+
+    float cookTorrenceNumerator = Specular_D_GGX(surface, L) * G_Schlick_Smith(surface, L) * k_s;
+    float cookTorrenceDenominator = 4.0 * surface.NdotV * NdotL;
+    cookTorrenceDenominator = max(cookTorrenceDenominator, 0.000001);
+    float cookTorrence = cookTorrenceNumerator / cookTorrenceDenominator;
+
+
+    float3 BRDF = k_d * lambert + cookTorrence;
+    colorAccum += BRDF * NdotL;
+    
     
     float4 color = float4(colorAccum, baseColor.a);
-
-
-    // HACK: 
-    if (color.x != 12.487489)
-    {
-//        color = float4(diffuseColor + emissive, baseColor.a);
-        color = float4(specularColor, baseColor.a);
-
-        /*
-        float3 Specular;
-        float3 Half = normalize(LightDir + view);
-        float HalfDot = saturate(dot(Half, normal));
-        Specular = pow(HalfDot, 0.5);
-
-        color = float4(Specular, 1);*/
-
-    }
-
     return color;
 }
