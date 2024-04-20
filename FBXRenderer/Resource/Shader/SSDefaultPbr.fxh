@@ -1,11 +1,9 @@
 
 Texture2D txBaseColor : register(t0);
 Texture2D<float3> txNormal : register(t1);
-Texture2D<float3> txMetallic : register(t2);
+Texture2D<float> txMetallic : register(t2);
 Texture2D txEmissive : register(t3);
 Texture2D<float> txOcclusion : register(t4);
-
-
 
 
 SamplerState samLinear : register(s0);
@@ -30,11 +28,33 @@ cbuffer MaterialParam : register(b2)
     float4 baseColorFactor;
     float4 emissiveFactor;
     float normalTextureScale;
-    float2 metallicRoughnessFactor;
+    float metallicFactor;
+    float roughnessFactor;
 };
 
 
+#ifdef ENABLE_SKINNING
+StructuredBuffer<float4x4> SkeletonJointInverse : register(t3);
+StructuredBuffer<float4x4> CurrentJoint : register(t4);
+#endif
+
 //--------------------------------------------------------------------------------------
+
+
+const static matrix IDENTITY_MATRIX =
+{
+    { 1, 0, 0, 0 },
+    { 0, 1, 0, 0 },
+    { 0, 0, 1, 0 },
+    { 0, 0, 0, 1 }
+};
+
+const static int INT_MAX = 2147483647;
+const static unsigned int INVALID_IDX = -1;
+
+
+//--------------------------------------------------------------------------------------
+
 struct VS_INPUT
 {
     float4 Pos : POSITION;
@@ -63,6 +83,41 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output = (PS_INPUT) 0;
 
+#ifdef ENABLE_SKINNING
+    
+    matrix inverseBoneMatrix = IDENTITY_MATRIX;
+    for (int i = 0; i < 4; i++)
+    {
+        if (input.jointIndices[i] == INVALID_IDX)
+        {
+            continue;
+        }
+        inverseBoneMatrix = mul(mul(inverseBoneMatrix, SkeletonJointInverse[input.jointIndices[i]]), input.jointWeights[i]);
+    }
+    
+    matrix currentBoneMatrix = IDENTITY_MATRIX;
+    for (int i = 0; i < 4; i++)
+    {
+        if (input.jointIndices[i] == INVALID_IDX)
+        {
+            continue;
+        }
+        currentBoneMatrix = mul(mul(currentBoneMatrix, CurrentJoint[input.jointIndices[i]]), input.jointWeights[i]);
+    }
+    
+    
+    if(inverseBoneMatrix[0][0] != 188135.489457)
+    {
+//        inverseBoneMatrix = IDENTITY_MATRIX;
+//        currentBoneMatrix = IDENTITY_MATRIX;
+    }
+    input.Pos = mul(input.Pos, inverseBoneMatrix);
+    input.Pos = mul(input.Pos, currentBoneMatrix);
+#endif
+    
+    
+    
+    
     output.Pos = mul(input.Pos, WMatrix);
     output.Pos = mul(output.Pos, VPMatrix);
     output.Normal = mul(input.Normal, RotMatrix);
@@ -71,6 +126,9 @@ PS_INPUT VS(VS_INPUT input)
     output.UV0 = input.UV0;
     output.UV1 = input.UV1;
     output.WorldPos = mul(input.Pos, WMatrix);
+    
+    
+
     
     return output;
 }
@@ -97,13 +155,15 @@ float3 ComputeNormal(PS_INPUT psInput)
 {
     float3 normal = normalize(psInput.Normal);
     float3 tangent = normalize(psInput.Tangent.xyz);
-    float3 bitangent = normalize(cross(normal, tangent)) * psInput.Tangent.w;
+    float3 bitangent = normalize(cross(normal, tangent)); //* psInput.Tangent.w;
 
-	float3x3 tangentFrame = float3x3(tangent, bitangent, normal);
+    float3x3 tangentFrame = float3x3(tangent, bitangent, normal);
     
     normal = txNormal.Sample(samLinear, psInput.UV0) * 2.0 - 1.0;
     normal = normalize(normal);
     normal = normalize(normal * float3(normalTextureScale, normalTextureScale, 1));
+
+
 
     return mul(normal, tangentFrame);
 }
@@ -156,14 +216,15 @@ float3 ComputeSpecular(SurfaceProperties surface)
     float G_V = surface.NdotV + sqrt((surface.NdotV - surface.NdotV * surface.alphaSqr) * surface.NdotV + surface.alphaSqr);
     float3 specular = Fresnel_Shlick(surface.c_spec, 1, surface.NdotV);
     
-	return specular;
+    return specular;
 
 }
 
 float4 PS(PS_INPUT input) : SV_Target
 {
     float4 baseColor = baseColorFactor * txBaseColor.Sample(samLinear, input.UV0);
-    float2 metallic = metallicRoughnessFactor * txMetallic.Sample(samLinear, input.UV0).bg;
+    float metallic = metallicFactor * txMetallic.Sample(samLinear, input.UV0);
+    float roughness = roughnessFactor;
     float occlusion = txOcclusion.Sample(samLinear, input.UV0);
 
     float4 emissiveSample = txEmissive.Sample(samLinear, input.UV0);
@@ -176,33 +237,30 @@ float4 PS(PS_INPUT input) : SV_Target
     surface.N = ComputeNormal(input);
     surface.V = normalize(ViewerPos - input.WorldPos);
     surface.NdotV = saturate(dot(surface.N, surface.V));
-    surface.c_diff = baseColor.rgb * (1 - kDielectricSpecular) * (1 - metallic.x) * occlusion;
-    surface.c_spec = lerp(kDielectricSpecular, baseColor.rgb, metallic.x) * occlusion;
-    surface.roughness = metallic.y;
-    surface.alpha = metallic.y * metallic.y;
+    surface.c_diff = baseColor.rgb * (1 - kDielectricSpecular) * (1 - metallic) * occlusion;
+    surface.c_spec = lerp(kDielectricSpecular, baseColor.rgb, metallic) * occlusion;
+    surface.roughness = roughness;
+    surface.alpha = roughness * roughness;
     surface.alphaSqr = surface.alpha * surface.alpha;
 
     float3 colorAccum = emissive;
     
     float3 H = normalize(surface.V + L);
     float VdotH = dot(surface.V, H);
-    float k_s = Fresnel_Shlick(metallic.x, 1, VdotH);
+    float k_s = Fresnel_Shlick(metallic, 1, VdotH);
     float k_d = 1 - k_s;
 
     float3 lambert = baseColor;
 
     float NdotL = saturate(dot(surface.N, L));
 
-
     float cookTorrenceNumerator = Specular_D_GGX(surface, L) * G_Schlick_Smith(surface, L) * k_s;
     float cookTorrenceDenominator = 4.0 * surface.NdotV * NdotL;
     cookTorrenceDenominator = max(cookTorrenceDenominator, 0.000001);
-    float cookTorrence = cookTorrenceNumerator / cookTorrenceDenominator;
-
+    float cookTorrence = min(k_s, cookTorrenceNumerator / cookTorrenceDenominator);
 
     float3 BRDF = k_d * lambert + cookTorrence;
-    colorAccum += BRDF * NdotL;
-    
+    colorAccum += BRDF * NdotL * SunIntensity;
     
     float4 color = float4(colorAccum, baseColor.a);
     return color;

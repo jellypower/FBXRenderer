@@ -28,8 +28,7 @@ public:
 	FORCEINLINE SSMaterialAsset* GetMaterial(uint32 subMatIdx=0) const { return _multiMaterialList[subMatIdx]; }
 	FORCEINLINE uint8 GetMultiMaterialCount() const { return _geometry->GetSubGeometryNum(); }
 
-	void BindModel(ID3D11DeviceContext* InDeviceContext, uint32 multiMatIdx = 0) const;
-
+	// 여기서 Skeleton Mesh 타입과 Skeleton Mesh랑 엮이는 SkeletonAsset, SkeletonAnimAsset 바인딩 가능하게 해주자.
 
 
 };

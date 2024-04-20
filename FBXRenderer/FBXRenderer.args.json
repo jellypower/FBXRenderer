@@ -5,6 +5,10 @@
     {
       "Id": "bbc8fcce-3fab-4c57-a389-efe84a076626",
       "Command": "g_exportSSMaterial=true"
+    },
+    {
+      "Id": "7b8ddded-43b4-460c-ae75-db4a31d8c581",
+      "Command": "g_WndRect={0,0,1280,720}"
     }
   ]
 }

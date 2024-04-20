@@ -10,6 +10,17 @@
 #include "SSEngineDefault/SSContainer/StringHashMapA.h"
 
 
+enum class TexToReturnOnFail
+{
+	MAGENTA,
+	WHITE,
+	BLACK,
+	EMPTYNORMAL,
+
+	Return_NULL,
+
+};
+
 class SSTextureAssetManager
 {
 	friend class SSRenderer;
@@ -23,8 +34,10 @@ private:
 		g_instance = DBG_NEW SSTextureAssetManager(poolCapacity, hashCapacity, hashCollisionLimit, hashSeed);
 	}
 public:
-	static FORCEINLINE SSTextureAsset* FindAssetWithName(const char* name) { return g_instance->FindAssetWithNameInternal(name); }
+	static FORCEINLINE SSTextureAsset* FindAssetWithName(const char* name, TexToReturnOnFail OnFailReturn = TexToReturnOnFail::WHITE)
+		{ return g_instance->FindAssetWithNameInternal(name, OnFailReturn); }
 	static FORCEINLINE SSTextureAsset* GetAssetWithIdx(uint32 idx) { return g_instance->_textureList[idx]; }
+	static FORCEINLINE uint32 GetAssetCount() { return g_instance->_textureList.GetSize(); }
 
 	static constexpr char EmptyTextureName[] = "EMPTY";
 	static constexpr char BlackTextureName[] = "BLACK";
@@ -45,7 +58,7 @@ private:
 	SSTextureAssetManager(uint32 poolCapacity, uint32 hashCapacity, uint32 hashCollisionLimit, uint64 hashSeed);
 	~SSTextureAssetManager();
 
-	SSTextureAsset* FindAssetWithNameInternal(const char* name);
+	SSTextureAsset* FindAssetWithNameInternal(const char* name, TexToReturnOnFail OnFailReturn);
 	
 };
 

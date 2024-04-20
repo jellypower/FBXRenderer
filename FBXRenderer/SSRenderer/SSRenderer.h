@@ -12,13 +12,13 @@
 #include "RenderAsset/AssetType/SSMaterialAsset.h"
 
 
+struct BoneNode;
+
 enum class NativePlatformType
 {
 	WindowsD3D11,
 };
 
-
-class SSModelCombinationAsset;
 
 class SSRenderer {
 
@@ -44,33 +44,56 @@ private:
 
 	SSFBXImporter _fbxImporter;
 
+	SS::FixedStringW<PATH_LEN_MAX> _fbxFilePath;
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> _mdlcAssetName;
+
 	class SSCamera* _renderTarget;
 
 	float _camYRotation = 0;
 	float _camXRotation = 0;
 
+	
+
+	// HACK: 
+	struct PbrMaterialParamEditorCopy* _pbrMaterialParamcopyList = nullptr;
+
+	class SSModelCombinationAsset* _mdlcCache;
+	class SSSkeletonAsset* _skeletonAssetCache;
+	class SSSkeletonAnimAsset* _skeletonAnimCache;
+	class SSModelAsset* _directionMeshCache;
+
 	GlobalRenderParam _globalParamContext;
 
 public:
-
 	virtual NativePlatformType GetNativePlatformType();
 	void* GetNativeDevice();
 
 	HRESULT Init(HINSTANCE InhInst, HWND InhWnd);
 	HRESULT InitShaderManager();
+
+	void BindFbxFilePathToImport(const utf16* FilePath);
 	HRESULT ImportFBXFileToAssetPool();
 	void CleanUp();
 
+	void BindModel(const SSModelAsset* modelToBind, uint8 multiMaterialIdx = 0);
+
+	void SetModelTransform(Transform boundAssetTransform);
+	void Draw();
+
 
 	void BeginFrame();
-
 	void PerFrame();
 
-
 private:
+	void BindMaterial(SSMaterialAsset* materialAsset);
+	void BindGeometry(SSGeometryAsset* geometryAsset);
+	void BindShader(SSShaderAsset* shaderAsset);
+
+	void BindSkeleton(SSSkeletonAsset* skeletonAsset);
+	void BindSkeletonAnim(class SSSkeletonAnimAsset* skeletonAnimAsset, float time);
+
 	void TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
-
-	void InitCameraTemp();
-
-
+	void TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX inverseMatrix, XMMATRIX rotMatrix);
+	void DrawAnimatedSkeleton();
+	
 };

@@ -7,8 +7,7 @@
 #include "SSEngineDefault/SSNativeTypes.h"
 
 #include "SSShaderReflectionForMaterial.h"
-
-
+#include "SSEngineDefault/SSContainer/FixedList.h"
 
 
 enum class ShaderAssetInstanceStage {
@@ -29,6 +28,9 @@ private:
 
 	SS::FixedStringA<VS_SHADER_ENTRY_NAME_MAX_LEN> _vsShaderEntryPoint;
 	SS::FixedStringA<PS_SHADER_ENTRY_NAME_MAX_LEN> _psShaderEntryPoint;
+	SS::FixedList<SS::FixedStringA<SHADER_DEFINE_STR_LEN_MAX>, SHADER_DEFINE_CNT_MAX> _shaderDefines;
+	
+	D3D_SHADER_MACRO _shaderMacros[SHADER_DEFINE_CNT_MAX + 1];
 
 	D3D11_INPUT_ELEMENT_DESC LayoutDescArray[LAYOUT_NUM_MAX] = {};
 	CHAR SemanticStringList[LAYOUT_NUM_MAX][LAYOUT_SEMANTIC_NAME_LEN_MAX];
@@ -38,7 +40,8 @@ private:
 
 
 public:
-	SSShaderAsset(const char* InShaderName, const utf16* InShaderPath, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel);
+	SSShaderAsset(const char* InShaderName, const utf16* InShaderPath, LPCSTR szVSEntryPoint, LPCSTR szPSEntryPoint, LPCSTR szShaderModel, uint32 argCnt=0, ...);
+	
 
 	HRESULT CompileShader();
 	HRESULT InstantiateShader(ID3D11Device* InDevice);
@@ -49,6 +52,10 @@ public:
 
 
 public:
+	FORCEINLINE ID3D11InputLayout* GetInputLayout() const { return InputLayout; }
+	FORCEINLINE ID3D11VertexShader* GetVertexShader() const { return VertexShader; }
+	FORCEINLINE ID3D11PixelShader* GetPixelShader() const { return PixelShader;  }
+
 	FORCEINLINE ShaderAssetInstanceStage GetShaderInstanceStage() const { return _curStage; }
 
 	const FORCEINLINE SSShaderReflectionForMaterial* GetShaderReflectionPtr() const { return &ShaderReflection; }

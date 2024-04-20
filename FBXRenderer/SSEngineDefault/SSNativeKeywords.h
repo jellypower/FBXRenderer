@@ -14,6 +14,7 @@ typedef unsigned char			uint8;
 typedef unsigned char			byte;
 
 typedef wchar_t					utf16;
+typedef char					utf8;
 
 constexpr uint32 SS_UINT32_MAX = 0xffffffff;
 
@@ -37,3 +38,19 @@ public:													\
 		g_instance = nullptr;							\
 	}													\
 private:
+
+
+
+#define SS_DECLARE_ASSET_MANAGER(CLASS_NAME)																							\
+	friend class SSFBXImporter;																											\
+	SS_DECLARE_AS_SINGLETON(CLASS_NAME)																									\
+	static FORCEINLINE void Instantiate(uint32 poolCapacity, uint32 hashCapacity, uint32 hashCollisionLimit, uint64 hashSeed) {			\
+		if (g_instance != nullptr) {																									\
+			assert(false);																												\
+			return;																														\
+		}																																\
+		g_instance = DBG_NEW CLASS_NAME(poolCapacity, hashCapacity, hashCollisionLimit, hashSeed);										\
+	}																																	\
+	static FORCEINLINE AssetType* FindAssetWithName(const char* name) { return g_instance->_assetContainer.FindAssetWithName(name); }	\
+	static FORCEINLINE AssetType* GetAsset(uint32 idx) { return g_instance->_assetContainer.GetAssetWithIdx(idx); }						\
+	CLASS_NAME(uint32 poolCapacity, uint32 hashCapacity, uint32 hashCollisionLimit, uint64 hashSeed);									

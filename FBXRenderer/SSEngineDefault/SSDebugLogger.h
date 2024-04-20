@@ -33,6 +33,10 @@
             (!!(EXPRESSION)) ||                                                                 \
             (_wassert((L##MESSAGE), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0))
 
+#define ASSERT_WITH_MESSAGE(EXPRESSION, MESSAGE) (void)(										\
+            (!!(EXPRESSION)) ||                                                                 \
+            (assert(MESSAGE), _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0)
+
 #include <crtdbg.h>
 #define _CRTDBG_MAP_ALLOC
 #define DBG_NEW new (_NORMAL_BLOCK , __FILE__ , __LINE__)

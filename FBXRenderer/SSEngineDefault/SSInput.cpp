@@ -106,6 +106,7 @@ void SSInput::ProcessInputEventForWindowsInternal(HWND hWnd, UINT message, WPARA
 
  void SSInput::ClearCurInputState()
  {
+	 SS_LOG("Clear input event!!\n");
 	 memset(_keyState, 0, sizeof(_keyState));
 	 memset(_mouseState, 0, sizeof(_mouseState));
  }

@@ -15,14 +15,25 @@ struct SimpleVertex
 	XMFLOAT2 Tex;
 };
 
-struct SSDefaultVertex {
+struct alignas(16) SSDefaultVertex {
 	Vector4f Pos;
 	Vector4f Normal;
 	Vector4f Tangent;
 	Vector2f Uv[2];
-	Vector4f WorldPos;
 };
 
+struct SSSkinnedVertex : SSDefaultVertex
+{
+	uint32 BoneIdx[4] = { 0, };
+	float Weight[4] = { 0, };
+};
+
+enum class EMeshType
+{
+	None = 0,
+	Rigid = 1,
+	Skinned = 2
+};
 
 enum class EGeometryDrawTopology {
 	None = 0,
@@ -44,20 +55,23 @@ class SSGeometryAsset : public SSAssetBase
 	friend class SSFBXImporter;
 private:
 	EGeometryDrawTopology _drawTopologyType = EGeometryDrawTopology::None;
+	EMeshType _meshType = EMeshType::None;
 	EVertexUnit _vertexUnit = EVertexUnit::None;
 
-	SSDefaultVertex* _vertexData = nullptr;
+	void* _vertexData = nullptr;
 	uint32 _eachVertexDataSize = 0;
-	uint32 _vertexDataNum = 0;
+	uint32 _vertexCnt = 0;
 	ID3D11Buffer* _vertexBuffer = nullptr;
 
 
 	uint8 _subGeometryNum;
 	uint32* _indexData = nullptr;
-	uint32 _indexDataNum[SUBGEOM_COUNT_MAX] = {0, };
+	uint32 _indexDataNum[SUBGEOM_COUNT_MAX] = { 0, };
 	uint32 _indexDataStartIndex[SUBGEOM_COUNT_MAX] = { 0, };
 	uint32 _wholeIndexDataNum = 0;
 	ID3D11Buffer* _indexBuffer = nullptr;
+
+	class SSSkeletonAsset* boundSkeletonAsset;
 
 
 public:
@@ -75,9 +89,16 @@ public:
 	void BindGeometry(ID3D11DeviceContext* InDeviceContex, uint32 subGeomIdx = 0) const;
 
 public:
+	FORCEINLINE EMeshType GetMeshType() const { return _meshType; }
 	FORCEINLINE uint8 GetSubGeometryNum() const { return _subGeometryNum; }
 	FORCEINLINE uint32 GetIndexDataStartIndex(uint32 subGeomIdx = 0) const { return _indexDataStartIndex[subGeomIdx]; }
 	FORCEINLINE uint32 GetIndexDataNum(uint32 subGeomIdx = 0) const { return _indexDataNum[subGeomIdx]; }
-	
+
+	FORCEINLINE ID3D11Buffer* const* GetVertexBufferPtr() const { return &_vertexBuffer; }
+	FORCEINLINE ID3D11Buffer* GetIndexBuffer() const { return _indexBuffer; }
+	FORCEINLINE uint32 GetEachVertexDataSize() const { return _eachVertexDataSize; }
+	FORCEINLINE EGeometryDrawTopology GetDrawTopology() const { return _drawTopologyType; }
+
+
 
 };

@@ -104,7 +104,7 @@ namespace SS {
 
 		while (count < _collisionLimit) {
 			if (_strPool[hashValue].GetLen() == 0) break;
-			if (strcmp(_strPool[hashValue].GetData(), hashString) == 0) return InsertResult::KeyAlreadyExist;
+			if (strcmp(_strPool[hashValue].C_Str(), hashString) == 0) return InsertResult::KeyAlreadyExist;
 
 			count++;
 			hashValue = (hashValue + 1) % _poolCapacity;
@@ -135,7 +135,7 @@ namespace SS {
 
 		while (count < _collisionLimit) {
 			if (_strPool[hashValue].GetLen() == 0) break;
-			if (strcmp(_strPool[hashValue].GetData(), hashString) == 0) return InsertResult::KeyAlreadyExist;
+			if (strcmp(_strPool[hashValue].C_Str(), hashString) == 0) return InsertResult::KeyAlreadyExist;
 
 			count++;
 			hashValue = (hashValue + 1) % _poolCapacity;
@@ -165,7 +165,7 @@ namespace SS {
 
 		while (count < _collisionLimit)
 		{
-			if (_strPool[hashValue].GetLen() != 0 && strcmp(_strPool[hashValue].GetData(), hashString) == 0) {
+			if (_strPool[hashValue].GetLen() != 0 && strcmp(_strPool[hashValue].C_Str(), hashString) == 0) {
 				outIdx = hashValue;
 				return FindResult::Success;
 			}
@@ -242,7 +242,7 @@ namespace SS {
 
 			if (_strPool[i].GetLen() != 0) {
 	
-				const char* hashString = _strPool[i].GetData();
+				const char* hashString = _strPool[i].C_Str();
 				uint32 hashStringLen = _strPool[i].GetLen();				
 
 				uint64 hashValue = CityHash64WithSeed(hashString, hashStringLen, newSeed) % newPoolCapacity;

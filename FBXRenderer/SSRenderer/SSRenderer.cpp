@@ -14,27 +14,72 @@
 #include "RenderAsset/SSGeometryAssetManager.h"
 #include "RenderAsset/SSMaterialAssetManager.h"
 #include "RenderAsset/SSTextureAssetManager.h"
+#include "RenderAsset/SSSkeletonAssetManager.h"
+#include "RenderAsset/SSSkeletonAnimAssetManager.h"
+
+#include "RenderAsset/AssetType/SSSkeletonAnimAsset.h"
 
 
 #include <vector>
 
+#include "imgui.h"
+#include "imgui_internal.h"
+#include "backends/imgui_impl_win32.h"
+#include "backends/imgui_impl_dx11.h"
+
 #include "SSSamplerPool.h"
 #include "RenderAsset/SSModelCombinationAssetManager.h"
 
+#include "RenderAsset/AssetType/SSMaterialAssetDetail/SSPbrMaterialAsset.h"
 
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\a.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\b.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\c.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedRoom.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedRoom02.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\ExportedBox.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\PSController.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\rp_nathan_animated_003_walking.fbx"
-#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Frew Worm Monster.fbx"
-//#define TEMP_FBX_MODEL_PATH "D:\\FBXAssets\\Ancient Warrior Mixamo Rigged\\source\\Ancient Warrior Mixamo Rigged.fbx"
 
-#define TEMP_MDLC_NAME "Frew Worm Monster.mdlc"
-#define TEMP_MDL_NAME "ExportedRoom_PS4 Controller.mdl"
+
+struct PbrMaterialParamEditorCopy
+{
+	PbrMaterialConstants pbrMaterialParam;
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> textureNames[SS_PBR_TX_COUNT];
+};
+
+void ExtractFileNameFromFilePath(SS::FixedStringA<ASSET_NAME_LEN_MAX>& OutFileName, const utf16* InFilePath)
+{
+	const utf16* fileNameStart = wcsrchr(InFilePath, '/');
+	if (fileNameStart == nullptr)
+		fileNameStart = wcsrchr(InFilePath, '\\');
+	if (fileNameStart == nullptr)
+	{
+		OutFileName.Clear();
+		return;
+	}
+	fileNameStart++;
+
+	uint32 InFilePathLen = wcslen(fileNameStart);
+
+	utf8 lFileName[ASSET_NAME_LEN_MAX];
+	SS::UTF16StrToUtf8Str(fileNameStart, InFilePathLen, lFileName, ASSET_NAME_LEN_MAX);
+
+	OutFileName = lFileName;
+	uint32 cutOutLen = strrchr(OutFileName, '.') - OutFileName;
+	OutFileName.CutOut(cutOutLen);
+
+
+}
+
+static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(EGeometryDrawTopology InTopology) {
+	switch (InTopology) {
+
+	case EGeometryDrawTopology::None:
+		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+	case EGeometryDrawTopology::TriangleList:
+		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	case EGeometryDrawTopology::PointList:
+		return D3D10_PRIMITIVE_TOPOLOGY_POINTLIST;
+
+
+	default:
+		assert(false);
+		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+	}
+}
 
 
 NativePlatformType SSRenderer::GetNativePlatformType()
@@ -135,10 +180,10 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 		sd.Width = width;
 		sd.Height = height;
 		sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		sd.SampleDesc.Count = 1; // ��Ƽ���ø�(Anti Aliasing ���� �ɼǵ�)
+		sd.SampleDesc.Count = 1;
 		sd.SampleDesc.Quality = 0;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		sd.BufferCount = 1; // ���� ü���� ������ ������ ������ �����ش�.
+		sd.BufferCount = 1;
 
 		hr = dxgiFactory2->CreateSwapChainForHwnd(_d3DDevice, hWnd, &sd, nullptr, nullptr, &SwapChain1);
 		if (SUCCEEDED(hr))
@@ -150,17 +195,17 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	else {
 		//	DirectX 11.0 version
 		DXGI_SWAP_CHAIN_DESC sd = {};
-		sd.BufferCount = 1; // ���� ����Ʈ���۸� ������ �� ������ ������ �����ش�. 
+		sd.BufferCount = 1;
 		sd.BufferDesc.Width = width;
 		sd.BufferDesc.Height = height;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // ����ü�� �÷�����
-		sd.BufferDesc.RefreshRate.Numerator = 60; // 60������
+		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.RefreshRate.Numerator = 60;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
 		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		sd.OutputWindow = hWnd;
-		sd.SampleDesc.Count = 1; // SampleDesc: ��Ƽ���ø� �ɼǵ�(MSAA)
+		sd.SampleDesc.Count = 1;
 		sd.SampleDesc.Quality = 0;
-		sd.Windowed = TRUE; // ������ ������� Ǯ��ũ�� �������
+		sd.Windowed = TRUE;
 
 		hr = dxgiFactory->CreateSwapChain(_d3DDevice, &sd, &SwapChain);
 	}
@@ -213,7 +258,6 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	descDSV.Texture2D.MipSlice = 0;
 	hr = _d3DDevice->CreateDepthStencilView(DepthStencil, &descDSV, &DepthStencilView);
-	// ������ ���� �ؽ��ķ� ���� ���ٽ� "��"�� ����
 	if (FAILED(hr))
 		return hr;
 
@@ -230,8 +274,18 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	vp.TopLeftY = 0;
 	_deviceContext->RSSetViewports(1, &vp);
 
-	// ���̴� �ʱ�ȭ �ڵ�Ϸ�!
-	// ���׸��� �ʱ�ȭ, ���ؽ����� �ʱ�ȭ �Լ� �����
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(_d3DDevice, _deviceContext);
+
 
 	SSSamplerPool::Instantiate();
 	SSSamplerPool::Get()->SetRenderer(this);
@@ -252,10 +306,13 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 	SSMaterialAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 	SSMaterialAssetManager::Get()->CreateTempMaterials(_d3DDevice);
 
+	SSSkeletonAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+	SSSkeletonAnimAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 
 	SSGeometryAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 	SSModelAssetManager::Instantiate(1000, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
 	SSModelCombinationAssetManager::Instantiate(100, 1000, 10, RANDOM_PRIMENO_FOR_HASH);
+
 
 
 	hr = ImportFBXFileToAssetPool();
@@ -266,6 +323,9 @@ HRESULT SSRenderer::Init(HINSTANCE InhInst, HWND InhWnd)
 
 
 	SSMaterialAssetManager::Get()->InstantiateAllMaterials(_d3DDevice, _deviceContext);
+
+	SSSkeletonAssetManager::Get()->InstantiateAllSkeletonGPUBuffer(_d3DDevice, _deviceContext);
+	SSSkeletonAnimAssetManager::Get()->InstantiateAllAsets(_d3DDevice, _deviceContext);
 
 	hr = SSGeometryAssetManager::Get()->SendAllGeometryAssetToGPUTemp(_d3DDevice);
 	if (FAILED(hr)) {
@@ -302,41 +362,64 @@ HRESULT SSRenderer::InitShaderManager()
 	return S_OK;
 }
 
-
+void SSRenderer::BindFbxFilePathToImport(const utf16* FilePath)
+{
+	_fbxFilePath = FilePath;
+}
 
 
 HRESULT SSRenderer::ImportFBXFileToAssetPool()
 {
 	HRESULT hr = S_OK;
 
-	hr = _fbxImporter.LoadModelAssetFromFBXFile(TEMP_FBX_MODEL_PATH);
+	utf8 fbxFilePathA[PATH_LEN_MAX];
+
+
+	SS::UTF16StrToUtf8Str(L"Resource\\DefaultMesh\\DirectionMesh.fbx", 39, fbxFilePathA, PATH_LEN_MAX);
+	hr = _fbxImporter.LoadModelAssetFromFBXFile(fbxFilePathA);
 	if (FAILED(hr)) {
 		SS_CLASS_ERR_LOG();
 		return hr;
 	}
-
 	_fbxImporter.StoreCurrentFBXModelAssetToAssetManager();
+	_fbxImporter.ClearFBXModelAsset();
+
+	SS::UTF16StrToUtf8Str(_fbxFilePath, _fbxFilePath.GetLen(), fbxFilePathA, PATH_LEN_MAX);
+	hr = _fbxImporter.LoadModelAssetFromFBXFile(fbxFilePathA);
+	if (FAILED(hr)) {
+		SS_CLASS_ERR_LOG();
+		return hr;
+	}
+	_fbxImporter.StoreCurrentFBXModelAssetToAssetManager();
+	_fbxImporter.ClearFBXModelAsset();
+
+
+
+
+	_pbrMaterialParamcopyList = DBG_NEW PbrMaterialParamEditorCopy[SSMaterialAssetManager::GetAssetCount()];
+	for (uint32 i = 0; i < SSMaterialAssetManager::GetAssetCount(); i++)
+	{
+		SSMaterialAsset* thisMaterialAsset = SSMaterialAssetManager::GetAssetWithIdx(i);
+		if (thisMaterialAsset->GetExplicitMaterialType() == ExplicitMaterialType::SSDefaultPbrMaterial)
+		{
+			const SSPbrMaterialAsset* thisPbrMaterial = static_cast<SSPbrMaterialAsset*>(thisMaterialAsset);
+			_pbrMaterialParamcopyList[i].pbrMaterialParam = thisPbrMaterial->GetMaterialParam();
+
+			_pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_BASE_COLOR_IDX] = thisPbrMaterial->GetTextureName(SS_PBR_TX_BASE_COLOR_IDX);
+			_pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_NORMAL_IDX] = thisPbrMaterial->GetTextureName(SS_PBR_TX_NORMAL_IDX);
+			_pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_METALLIC_IDX] = thisPbrMaterial->GetTextureName(SS_PBR_TX_METALLIC_IDX);
+			_pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_EMISSIVE_IDX] = thisPbrMaterial->GetTextureName(SS_PBR_TX_EMISSIVE_IDX);
+			_pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_OCCLUSION_IDX] = thisPbrMaterial->GetTextureName(SS_PBR_TX_OCCLUSION_IDX);
+		}
+	}
+
 
 	return hr;
 }
 
 
-void SSRenderer::InitCameraTemp()
-{
-	_renderTarget = DBG_NEW SSCamera();
-	_renderTarget->UpdateResolutionWithClientRect(_d3DDevice, hWnd);
-	_renderTarget->GetTransform().Position = Vector4f(.0f, .0f, -5.0f, .0f);
-	_renderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - _renderTarget->GetTransform().Position);
-	_renderTarget->SetFOVWithRadians(XM_PIDIV4);
-	_renderTarget->SetNearFarZ(0.01f, 10000.f);
-
-	SS_LOG("Log (SSRenderer): Renderer Init finished!\n");
-}
-
-
 void SSRenderer::CleanUp()
 {
-
 	SSModelCombinationAssetManager::Get()->ReleaseAllAssets();
 	SSModelCombinationAssetManager::Release();
 
@@ -345,6 +428,14 @@ void SSRenderer::CleanUp()
 
 	SSGeometryAssetManager::Get()->ReleaseAllGeometryDataOnGPU();
 	SSGeometryAssetManager::Release();
+
+	delete _pbrMaterialParamcopyList;
+
+	SSSkeletonAnimAssetManager::Get()->ReleaseAllAssets();
+	SSSkeletonAnimAssetManager::Release();
+
+	SSSkeletonAssetManager::Get()->ReleaseAllSkeletons();
+	SSSkeletonAssetManager::Get()->Release();
 
 	SSMaterialAssetManager::Get()->ReleaseAllMaterials();
 	SSMaterialAssetManager::Get()->Release();
@@ -362,6 +453,11 @@ void SSRenderer::CleanUp()
 		delete _renderTarget;
 	}
 
+	// Cleanup
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	if (_deviceContext) _deviceContext->ClearState();
 	if (_d3DDevice) _d3DDevice->Release();
 	if (D3DDevice1) D3DDevice1->Release();
@@ -372,13 +468,131 @@ void SSRenderer::CleanUp()
 	if (RenderTargetView) RenderTargetView->Release();
 	if (DepthStencil) DepthStencil->Release();
 	if (DepthStencilView) DepthStencilView->Release();
+}
 
+void SSRenderer::BindModel(const SSModelAsset* modelToBind, uint8 multiMaterialIdx)
+{
+	if (multiMaterialIdx >= modelToBind->GetMultiMaterialCount())
+	{
+		SS_CLASS_WARNING_LOG("Material idx invalid(Material Idx Max/idx to draw : %d/%d)", multiMaterialIdx, modelToBind->GetMultiMaterialCount());
+		return;
+	}
+
+	if (modelToBind->GetMaterial(multiMaterialIdx)->IsBindingPossible()) BindMaterial(modelToBind->GetMaterial(multiMaterialIdx));
+	else {
+		SS_CLASS_ERR_LOG("material of Asset is not bindable");
+		return;
+	}
+
+	if (modelToBind->GetGeometry()->UsableOnGPU()) BindGeometry(modelToBind->GetGeometry());
+	else {
+		SS_CLASS_ERR_LOG("material of Asset is not bindable");
+		return;
+	}
+
+}
+
+void SSRenderer::BindSkeleton(SSSkeletonAsset* skeletonToBind)
+{
+	_deviceContext->VSSetShaderResources(2, 1, skeletonToBind->GetJointBufferSRVPtr());
+}
+
+void SSRenderer::BindSkeletonAnim(SSSkeletonAnimAsset* skeletonAnimAsset, float time)
+{
+	skeletonAnimAsset->UpdateGPUBufferFrameState(_deviceContext, (uint32)time);
+	_deviceContext->VSSetShaderResources(3, 1, skeletonAnimAsset->GetJointBufferSRVPtr());
+}
+
+
+void SSRenderer::BindMaterial(SSMaterialAsset* materialAsset)
+{
+	if (materialAsset->GetMaterialStage() < MaterialAssetInstanceStage::SystemBufferInitialized) {
+		SS_CLASS_ERR_LOG("To bind material, Material must be initialized\n");
+		return;
+	}
+	BindShader(materialAsset->GetShader());
+
+
+	uint8 VSBufferCnt = materialAsset->GetVSConstantBufferCnt(); // TODO: Hack
+	if (strcmp(materialAsset->GetShader()->GetAssetName(), SSShaderAssetManager::SSDefaultPbrSkinnedShaderName) == 0)
+		VSBufferCnt -= 2;
+
+	for (int i = 0; i < VSBufferCnt; i++) {
+		_deviceContext->VSSetConstantBuffers(materialAsset->GetVSConstantBufferIdx(i), 1,
+			materialAsset->GetVSConstantBufferPtr(i));
+	}
+	for (int i = 0; i < materialAsset->GetPSConstantBufferCnt(); i++) {
+		_deviceContext->PSSetConstantBuffers(materialAsset->GetPSConstantBufferIdx(i), 1,
+			materialAsset->GetPSConstantBufferPtr(i));
+	}
+
+	for (uint32 i = 0; i < materialAsset->GetTextureCnt(); i++)
+	{
+
+		_deviceContext->PSSetShaderResources(i, 1, materialAsset->GetBoundTextureAsset(i)->GetSRVpp());
+	}
+
+
+	_deviceContext->PSSetSamplers(0, materialAsset->GetSamplerCnt(), materialAsset->GetSamplerPtr());
+
+}
+
+void SSRenderer::BindGeometry(SSGeometryAsset* geometryAsset)
+{
+	uint32 offset = 0;
+	uint32 stride = geometryAsset->GetEachVertexDataSize();
+	_deviceContext->IASetVertexBuffers(0, 1, geometryAsset->GetVertexBufferPtr(), &stride, &offset);
+	_deviceContext->IASetIndexBuffer(geometryAsset->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+
+	_deviceContext->IASetPrimitiveTopology(ConvertToD3DTopology(geometryAsset->GetDrawTopology()));
+}
+
+void SSRenderer::BindShader(SSShaderAsset* shaderAsset)
+{
+
+	if (shaderAsset->GetShaderInstanceStage() < ShaderAssetInstanceStage::Instantiated) {
+		WSS_LOG(L"Warning[%ls]: Shader is not initalized completely. CurState: %d\n"
+			, shaderAsset->GetAssetPath(), shaderAsset->GetShaderInstanceStage());
+		return;
+	}
+
+	_deviceContext->IASetInputLayout(shaderAsset->GetInputLayout());
+	_deviceContext->VSSetShader(shaderAsset->GetVertexShader(), nullptr, 0);
+	_deviceContext->PSSetShader(shaderAsset->GetPixelShader(), nullptr, 0);
+}
+
+void SSRenderer::SetModelTransform(Transform boundAssetTransform)
+{
+
+}
+
+void SSRenderer::Draw()
+{
 
 }
 
 void SSRenderer::BeginFrame()
 {
-	InitCameraTemp();
+	_renderTarget = DBG_NEW SSCamera();
+	_renderTarget->UpdateResolutionWithClientRect(_d3DDevice, hWnd);
+	_renderTarget->GetTransform().Position = Vector4f(.0f, .0f, -5.0f, .0f);
+	_renderTarget->GetTransform().Rotation = Quaternion::FromLookDirect(Vector4f::Zero - _renderTarget->GetTransform().Position);
+	_renderTarget->SetFOVWithRadians(XM_PIDIV4);
+	_renderTarget->SetNearFarZ(0.01f, 10000.f);
+
+	SS_LOG("Log (SSRenderer): Renderer Init finished!\n");
+
+	_globalParamContext.SunDirection = _renderTarget->GetTransform().GetBackward();
+	_globalParamContext.SunIntensity = Vector4f::One * 1.5;
+
+	ExtractFileNameFromFilePath(_mdlcAssetName, _fbxFilePath);
+	_mdlcAssetName += ".mdlc";
+	_mdlcCache = SSModelCombinationAssetManager::FindAssetWithName(_mdlcAssetName);
+
+	_skeletonAssetCache = SSSkeletonAssetManager::FindAssetWithName("rp_nathan_animated_003_walking.skl");
+	_skeletonAnimCache = SSSkeletonAnimAssetManager::Get()->FindAssetWithName("rp_nathan_animated_003_walking.ska");
+	_directionMeshCache = SSModelAssetManager::FindModelWithName("DirectionMesh_Direction.mdl");
+
 }
 
 void SSRenderer::PerFrame()
@@ -386,11 +600,190 @@ void SSRenderer::PerFrame()
 	_deviceContext->ClearRenderTargetView(RenderTargetView, Colors::MidnightBlue);
 	_deviceContext->ClearDepthStencilView(DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	constexpr float CAM_XROT_MAX = 0.9;
+	// Imgui settings
+	{
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
 
+		ImGui::Begin("Material List");
+		{
+			for (uint32 i = 0; i < SSMaterialAssetManager::GetAssetCount(); i++)
+			{
+				SSMaterialAsset* thisMaterial = SSMaterialAssetManager::GetAssetWithIdx(i);
+
+				if (ImGui::CollapsingHeader(thisMaterial->GetAssetName()))
+				{
+					ImGui::Text("Material Type: %s", ExplicitMaterialTypeStr[(uint32)thisMaterial->GetExplicitMaterialType()]);
+					ImGui::Text("Shader Name: %s", thisMaterial->GetShader()->GetAssetName());
+
+					if (thisMaterial->GetExplicitMaterialType() == ExplicitMaterialType::SSDefaultPbrMaterial)
+					{
+						SSPbrMaterialAsset* thisPbrMaterial = static_cast<SSPbrMaterialAsset*>(thisMaterial);
+						ImGui::BeginChild(thisMaterial->GetAssetName(), ImVec2(0, 0), ImGuiChildFlags_AutoResizeY);
+
+						ImGui::TextColored(ImVec4(1, 1, 0, 1), "Parameters: ");
+
+						ImGui::ColorEdit4("BaseColorFactor", (float*)&(_pbrMaterialParamcopyList[i].pbrMaterialParam.baseColorFactor));
+						ImGui::ColorEdit4("EmissiveColorFactor", (float*)&(_pbrMaterialParamcopyList[i].pbrMaterialParam.emissiveFactor));
+						ImGui::SliderFloat("MetallicFactor", &(_pbrMaterialParamcopyList[i].pbrMaterialParam.metallicFactor), 0.0f, 1.0f);
+						ImGui::SliderFloat("RoughnessFactor", &(_pbrMaterialParamcopyList[i].pbrMaterialParam.roughnessFactor), 0.0f, 1.0f);
+
+
+						if (ImGui::Button("Sync Material Param"))
+						{
+							thisPbrMaterial->SetMaterialParam(_pbrMaterialParamcopyList[i].pbrMaterialParam);
+							thisPbrMaterial->SyncAllGPUBuffer(_deviceContext);
+						}
+
+
+
+						if (ImGui::TreeNode("Material Textures"))
+						{
+							if (ImGui::BeginCombo("Diffuse Texture", _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_BASE_COLOR_IDX]))
+							{
+								SS::FixedStringA<ASSET_NAME_LEN_MAX>& selectedTextureName = _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_BASE_COLOR_IDX];
+								for (uint32 j = 0; j < SSTextureAssetManager::GetAssetCount(); j++)
+								{
+									SSTextureAsset* comboBoxTextureItem = SSTextureAssetManager::GetAssetWithIdx(j);
+									bool isSelected = false;
+									if (strcmp(selectedTextureName, comboBoxTextureItem->GetAssetName()) == 0) isSelected = true;
+
+									if (ImGui::Selectable(comboBoxTextureItem->GetAssetName(), isSelected))
+										selectedTextureName = comboBoxTextureItem->GetAssetName();
+									if (isSelected)
+										ImGui::SetItemDefaultFocus();
+								}
+								ImGui::EndCombo();
+							}
+							if (ImGui::BeginCombo("Normal Texture", _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_NORMAL_IDX]))
+							{
+								SS::FixedStringA<ASSET_NAME_LEN_MAX>& selectedTextureName = _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_NORMAL_IDX];
+								for (uint32 j = 0; j < SSTextureAssetManager::GetAssetCount(); j++)
+								{
+									SSTextureAsset* comboBoxTextureItem = SSTextureAssetManager::GetAssetWithIdx(j);
+									bool isSelected = false;
+									if (strcmp(selectedTextureName, comboBoxTextureItem->GetAssetName()) == 0) isSelected = true;
+
+									if (ImGui::Selectable(comboBoxTextureItem->GetAssetName(), isSelected))
+										selectedTextureName = comboBoxTextureItem->GetAssetName();
+									if (isSelected)
+										ImGui::SetItemDefaultFocus();
+								}
+								ImGui::EndCombo();
+							}
+							if (ImGui::BeginCombo("Metallic Texture", _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_METALLIC_IDX]))
+							{
+								SS::FixedStringA<ASSET_NAME_LEN_MAX>& selectedTextureName = _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_METALLIC_IDX];
+								for (uint32 j = 0; j < SSTextureAssetManager::GetAssetCount(); j++)
+								{
+									SSTextureAsset* comboBoxTextureItem = SSTextureAssetManager::GetAssetWithIdx(j);
+									bool isSelected = false;
+									if (strcmp(selectedTextureName, comboBoxTextureItem->GetAssetName()) == 0) isSelected = true;
+
+									if (ImGui::Selectable(comboBoxTextureItem->GetAssetName(), isSelected))
+										selectedTextureName = comboBoxTextureItem->GetAssetName();
+									if (isSelected)
+										ImGui::SetItemDefaultFocus();
+								}
+								ImGui::EndCombo();
+							}
+							if (ImGui::BeginCombo("EMissive Texture", _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_EMISSIVE_IDX]))
+							{
+								SS::FixedStringA<ASSET_NAME_LEN_MAX>& selectedTextureName = _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_EMISSIVE_IDX];
+								for (uint32 j = 0; j < SSTextureAssetManager::GetAssetCount(); j++)
+								{
+									SSTextureAsset* comboBoxTextureItem = SSTextureAssetManager::GetAssetWithIdx(j);
+									bool isSelected = false;
+									if (strcmp(selectedTextureName, comboBoxTextureItem->GetAssetName()) == 0) isSelected = true;
+
+									if (ImGui::Selectable(comboBoxTextureItem->GetAssetName(), isSelected))
+										selectedTextureName = comboBoxTextureItem->GetAssetName();
+									if (isSelected)
+										ImGui::SetItemDefaultFocus();
+								}
+								ImGui::EndCombo();
+							}
+							if (ImGui::BeginCombo("Occlusion Texture", _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_OCCLUSION_IDX]))
+							{
+								SS::FixedStringA<ASSET_NAME_LEN_MAX>& selectedTextureName = _pbrMaterialParamcopyList[i].textureNames[SS_PBR_TX_OCCLUSION_IDX];
+								for (uint32 j = 0; j < SSTextureAssetManager::GetAssetCount(); j++)
+								{
+									SSTextureAsset* comboBoxTextureItem = SSTextureAssetManager::GetAssetWithIdx(j);
+									bool isSelected = false;
+									if (strcmp(selectedTextureName, comboBoxTextureItem->GetAssetName()) == 0) isSelected = true;
+
+									if (ImGui::Selectable(comboBoxTextureItem->GetAssetName(), isSelected))
+										selectedTextureName = comboBoxTextureItem->GetAssetName();
+									if (isSelected)
+										ImGui::SetItemDefaultFocus();
+								}
+								ImGui::EndCombo();
+							}
+
+							if (ImGui::Button("Sync Texture"))
+							{
+								for (uint32 j = 0; j < SS_PBR_TX_COUNT; j++)
+									thisPbrMaterial->SetPBRTextureName(_pbrMaterialParamcopyList[i].textureNames[j], (SS_PBR_TEXTURE_IDX)j);
+								thisPbrMaterial->SyncAllTextureItemWithName();
+							}
+
+							ImGui::TreePop();
+						}
+
+
+						ImGui::Spacing();
+						ImGui::EndChild();
+					}
+				}
+			}
+
+
+		}
+		ImGui::End();
+
+		ImGui::Begin("Texture List");
+		{
+			if (ImGui::BeginTable("Textures", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_Borders))
+			{
+				ImGui::TableNextColumn();
+				ImGui::TextColored(ImVec4(1, 1, 0, 1), "Texture Name");
+				ImGui::TableNextColumn();
+				ImGui::TextColored(ImVec4(1, 1, 0, 1), "Texture Path");
+
+				for (uint32 i = 0; i < SSTextureAssetManager::GetAssetCount(); i++)
+				{
+					SSTextureAsset* thisAsset = SSTextureAssetManager::GetAssetWithIdx(i);
+
+					ImGui::TableNextColumn();
+					ImGui::Text(thisAsset->GetAssetName());
+
+					ImGui::TableNextColumn();
+					utf8 assetPathUtf8[PATH_LEN_MAX];
+					SS::UTF16StrToUtf8Str(thisAsset->GetAssetPath(), thisAsset->GetAssetPathLen(), assetPathUtf8, PATH_LEN_MAX);
+					ImGui::Text(assetPathUtf8);
+				}
+
+				ImGui::EndTable();
+			}
+
+		}
+		ImGui::End();
+
+		ImGui::Begin("Global Settings");
+		{
+			ImGui::SliderFloat4("Light Intensity", (float*)&(_globalParamContext.SunIntensity), 0, 3);
+
+		}
+		ImGui::End();
+	}
+
+
+	constexpr float CAM_XROT_MAX = 0.9;
 	// process mouse input
 	if (SSInput::GetMouse(EMouseCode::MOUSE_RIGHT))
 	{
+
 		constexpr float CAM_ROT_SPEED = 1000;
 
 		_camYRotation += SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().X * CAM_ROT_SPEED;
@@ -462,26 +855,25 @@ void SSRenderer::PerFrame()
 	_camYRotation = fmodf(_camYRotation, XM_2PI);
 	_renderTarget->GetTransform().Rotation = XMQuaternionRotationRollPitchYaw(_camXRotation, _camYRotation, 0);
 	_globalParamContext.VPMatrix = XMMatrixTranspose(_renderTarget->GetViewProjMatrix());
-	_globalParamContext.SunDirection = Vector4f(1,1,0,0);
-	_globalParamContext.SunIntensity = Vector4f::One * 0.05;
 	_globalParamContext.ViewerPos = _renderTarget->GetTransform().Position;
+	_globalParamContext.SunDirection = _renderTarget->GetTransform().GetBackward();
 
 
-	SSModelCombinationAsset* mdlComb = SSModelCombinationAssetManager::Get()->FindAssetWithName(TEMP_MDLC_NAME);
-	SSModelAsset* mdl = SSModelAssetManager::FindModelWithName(TEMP_MDL_NAME);
+	Transform drawTransform;
 
-	Transform trans;
 
-	TraverseModelCombinationAndDraw(mdlComb, trans.AsMatrix(), trans.Rotation.AsMatrix());
+	TraverseModelCombinationAndDraw(_mdlcCache, drawTransform.AsMatrix(), drawTransform.Rotation.AsMatrix());
+//	TraverseSkeletonAndDrawRecursion(_skeletonAssetCache->GetBones(), 0, drawTransform.AsMatrix(), drawTransform.AsInverseMatrix(),drawTransform.Rotation.AsMatrix());
 
+	{
+		ImGui::Render();
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	}
 	SwapChain->Present(0, 0);
 }
 
 void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix)
 {
-
-	// HACK: model combination�� ������ �ƴ϶� ������ ���� ���� ��Ʈ��常 �������� ����
-	// HACK: asset->GetParent()!= nullptr ���ֱ�
 	if (asset->GetAssetType() == AssetType::ModelCombination && asset->GetParent() != nullptr)
 	{
 		const SSModelCombinationAsset* modelCombination = static_cast<const SSModelCombinationAsset*>(asset);
@@ -489,7 +881,14 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 
 		for (uint8 i = 0; i < modelAsset->GetMultiMaterialCount(); i++)
 		{
-			modelAsset->BindModel(_deviceContext, i);
+			BindModel(modelAsset, i);
+
+			if (modelAsset->GetGeometry()->GetMeshType() == EMeshType::Skinned)
+			{
+				BindSkeleton(_skeletonAssetCache);
+				BindSkeletonAnim(_skeletonAnimCache, 40);
+			}
+
 			const uint32 idxStart = modelAsset->GetGeometry()->GetIndexDataStartIndex(i);
 			const uint32 IdxSize = modelAsset->GetGeometry()->GetIndexDataNum(i);
 			SSMaterialAsset* materialAsset = modelAsset->GetMaterial(i);
@@ -503,13 +902,36 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 
 	for (SSPlaceableAsset* item : asset->GetChilds())
 	{
-		//		if (strcmp(item->GetAssetName(), "Dirt02") == 0) __debugbreak();
-		XMMATRIX mat = item->GetTransform().AsMatrix();
-		XMMATRIX matmul = item->GetTransform().AsMatrix() * transformMatrix;
 		TraverseModelCombinationAndDraw(item,
 			item->GetTransform().AsMatrix() * transformMatrix,
 			item->GetTransform().Rotation.AsMatrix() * rotMatrix);
 	}
+
+}
+
+void SSRenderer::TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX inverseMatrix, XMMATRIX rotMatrix)
+{
+	BindModel(_directionMeshCache);
+	_directionMeshCache->GetMaterial()->UpdateGlobalRenderParam(_deviceContext, _globalParamContext);
+
+	_directionMeshCache->GetMaterial()->UpdateTransform(_deviceContext, transformMatrix, rotMatrix);
+	_deviceContext->DrawIndexed(_directionMeshCache->GetGeometry()->GetIndexDataNum(), _directionMeshCache->GetGeometry()->GetIndexDataStartIndex(), 0);
+
+
+	XMMATRIX ret = inverseMatrix * transformMatrix;
+
+	for (const uint16 childIdx : boneList[boneIdx]._childs)
+	{
+		TraverseSkeletonAndDrawRecursion(boneList, childIdx,
+			boneList[childIdx]._transform.AsMatrix() * transformMatrix,
+			inverseMatrix * boneList[childIdx]._transform.AsInverseMatrix(),
+			boneList[childIdx]._transform.Rotation.AsMatrix() * rotMatrix);
+	}
+}
+
+void SSRenderer::DrawAnimatedSkeleton()
+{
+
 }
 
 

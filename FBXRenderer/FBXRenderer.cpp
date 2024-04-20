@@ -7,6 +7,9 @@
 #include "FBXRenderer.h"
 
 #include<shellapi.h>
+#include <shobjidl.h>
+
+#include "imgui.h"
 
 #include "SSRenderer/SSRenderer.h"
 
@@ -19,6 +22,7 @@
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
 HWND g_hWnd;
+RECT g_WndRect{0,0,1920,1080};
 SSRenderer g_Renderer;
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
@@ -33,8 +37,57 @@ void					AnalyzeCommandLineArguements();
 // HINSTANCE는 해당 어플리케이션에 해당하는 값. ("프로그램"에 대응, 똑같은 프로그램을 두 개 띄워도 HINSTANCE임)
 // HWND는 해당 어플리케이션의 하나의 "윈도우"에 해당하는 값 ("윈도우"에 대흥, 똑같은 프로그램을 두 개 띄우면 두 HWND는 다름)
 
+HRESULT FindFilePathWithOpenDialog(SS::FixedStringW<PATH_LEN_MAX>& OutFilePath)
+{
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
+		COINIT_DISABLE_OLE1DDE);
+	if (SUCCEEDED(hr))
+	{
+		IFileOpenDialog* pFileOpen;
+
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
+
+		if (SUCCEEDED(hr))
+		{
+			hr = pFileOpen->Show(NULL);
+
+			// Get the file name from the dialog box.
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+					// Display the file name to the user.
+					if (SUCCEEDED(hr))
+					{
+						OutFilePath = pszFilePath;
+						CoTaskMemFree(pszFilePath);
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
+	}
+	return hr;
+}
+
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 {
+	SS_LOG("========================== Select file to Open ==========================");
+	SS::FixedStringW<PATH_LEN_MAX> FbxFilePathToLoad;
+	FindFilePathWithOpenDialog(FbxFilePathToLoad);
+	if(FbxFilePathToLoad.GetLen() == 0)
+	{
+		return 0;
+	}
+
 	AnalyzeCommandLineArguements();
 
 #ifdef _DEBUG
@@ -42,15 +95,12 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 #endif
 
-	SSInput::Get();
-	SSFrameInfo::Get();
-
 	// 전역 문자열을 초기화합니다.
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_FBXRENDERER, szWindowClass, MAX_LOADSTRING);
 
 	// 애플리케이션 초기화를 수행합니다:
-	if (FAILED(InitWindow(hInstance, nCmdShow, { 0,0,800,600 })))
+	if (FAILED(InitWindow(hInstance, nCmdShow, g_WndRect)))
 	{
 		__debugbreak();
 		return FALSE;
@@ -58,6 +108,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 	g_hInst = hInstance;
 
 
+	g_Renderer.BindFbxFilePathToImport(FbxFilePathToLoad);
 	HRESULT hr = g_Renderer.Init(g_hInst, g_hWnd);
 	if (FAILED(hr)) {
 		__debugbreak();
@@ -71,6 +122,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 
 	MSG msg = { 0 };
 
+	SSInput::Get();
+	SSFrameInfo::Get();
 	g_Renderer.BeginFrame();
 
 	while (WM_QUIT != msg.message)
@@ -163,16 +216,16 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, RECT WindowSize)
 }
 
 
-//  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  용도: 주 창의 메시지를 처리합니다.
-//
-//  WM_COMMAND  - 애플리케이션 메뉴를 처리합니다.
-//  WM_PAINT    - 주 창을 그립니다.
-//  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
-//
+
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+		return true;
+
+
 	switch (message)
 	{
 	case WM_COMMAND:
@@ -201,6 +254,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	break;
 	case WM_KILLFOCUS:
+	case WM_MOUSELEAVE:
+	case WM_NCMOUSELEAVE:
 		SSInput::Get()->ClearCurInputState();
 		break;
 
@@ -220,7 +275,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_RBUTTONUP:
 	case WM_MBUTTONDOWN:
 	case WM_MBUTTONUP:
-	
+
 		SSInput::Get()->ProcessInputEventForWindowsInternal(hWnd, message, wParam, lParam);
 		break;
 
@@ -274,9 +329,40 @@ void AnalyzeCommandLineArguements()
 	int32 argc;
 	LPWSTR* argv = CommandLineToArgvW(GetCommandLine(), &argc);
 
-	for(int32 i=0;i<argc;i++)
+	for (int32 i = 1; i < argc; i++)
 	{
-		if (wcscmp(argv[i], L"g_exportSSMaterial=true") == 0) SSFBXImporter::g_exportSSMaterial = true;
+		SS::FixedStringW<100> Key;
+		SS::FixedStringW<100> Value;
+
+
+		utf16* splitStart = wcschr(argv[i], L'=');
+		if (splitStart != nullptr)
+		{
+			uint32 newStrlen = splitStart - argv[i];
+
+			Key = argv[i];
+			Key.CutOut(newStrlen);
+			Value = (splitStart + 1);
+		}
+		else
+		{
+			Key = argv[i];
+		}
+
+
+		if (wcscmp(Key.C_Str(), L"g_exportSSMaterial") == 0)
+		{
+			if (wcscmp(Value.C_Str(), L"true") == 0)
+			{
+				SSFBXImporter::g_exportSSMaterial = true;
+			}
+		}
+		else if (wcscmp(Key.C_Str(), L"g_WndRect") == 0)
+		{
+			swscanf(Value.C_Str(), L"{%d,%d,%d,%d}",
+				&g_WndRect.left, &g_WndRect.top, &g_WndRect.right, &g_WndRect.bottom);
+		}
+
 	}
 
 }

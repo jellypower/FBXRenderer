@@ -73,35 +73,6 @@ void SSMaterialAsset::Release()
 
 
 
-void SSMaterialAsset::BindMaterial(ID3D11DeviceContext* InDeviceContext) const
-{
-	if (_materialStage < MaterialAssetInstanceStage::SystemBufferInitialized) {
-		SS_CLASS_ERR_LOG("To bind material, Material must be initialized\n");
-		return;
-	}
-
-	_shader->BindShaderAsset(InDeviceContext);
-
-
-	for (int i = 0; i < _shaderReflectionCache->VSConstBufferNum; i++) {
-		InDeviceContext->VSSetConstantBuffers(_shaderReflectionCache->VSCBReflectionInfo[i].CBSlotIdx, 1,
-			&VSConstantBuffers[i]);
-	}
-	for (int i = 0; i < _shaderReflectionCache->PSConstBufferNum; i++) {
-		InDeviceContext->PSSetConstantBuffers(_shaderReflectionCache->PSCBReflectionInfo[i].CBSlotIdx, 1,
-			&PSConstantBuffers[i]);
-	}
-
-	for(uint32 i=0;i<_shaderReflectionCache->TexturePoolCount;i++)
-	{
-		InDeviceContext->PSSetShaderResources(i,	1, _textureCache[i]->GetSRVpp());
-	}
-
-	
-	InDeviceContext->PSSetSamplers(0, _shaderReflectionCache->SamplerCount, _sampleCache);
-
-}
-
 void SSMaterialAsset::InstantiateGPUBuffer(ID3D11Device* InDevice)
 {
 	uint8 CurVSCBIdx = 0;
@@ -141,6 +112,34 @@ void SSMaterialAsset::ReleaseGPUBuffer()
 	}
 }
 
+void SSMaterialAsset::ChangeShader(const char* InShaderAssetName)
+{
+	SSShaderAsset* shaderAsset = SSShaderAssetManager::FindShaderWithName(InShaderAssetName);
+	if (InShaderAssetName == nullptr)
+	{
+		SS_CLASS_ERR_LOG("This name of material not found. (shaderName: %s)\n", InShaderAssetName);
+		return;
+	}
+	if (shaderAsset->GetShaderInstanceStage() < ShaderAssetInstanceStage::Instantiated)
+	{
+		SS_CLASS_ERR_LOG("To make material, shader asset layout must be initialized. (shaderName: %s)\n", InShaderAssetName);
+		return;
+	}
+
+	_shader = shaderAsset;
+	_shaderReflectionCache = _shader->GetShaderReflectionPtr();
+}
+
+void SSMaterialAsset::ChangeShader(SSShaderAsset* InShaderAsset)
+{
+	if (InShaderAsset->GetShaderInstanceStage() < ShaderAssetInstanceStage::Instantiated) {
+		SS_CLASS_ERR_LOG("To make material, shader asset layout must be initialized \n");
+		return;
+	}
+	_shader = InShaderAsset;
+	_shaderReflectionCache = _shader->GetShaderReflectionPtr();
+}
+
 void SSMaterialAsset::UpdateSystemBuffer(int bufferIdx, const void* InData, uint32 InDataSize)
 {
 	SS_ASSERT(InDataSize == _shaderReflectionCache->EntireCBReflectionInfo[bufferIdx].CBSize, "Data size not match\n");
@@ -157,7 +156,8 @@ void SSMaterialAsset::SyncGPUBuffer(ID3D11DeviceContext* InDeviceContext, uint32
 void SSMaterialAsset::SyncAllGPUBuffer(ID3D11DeviceContext* InDeviceContext)
 {
 	for (uint32 i = MATERIAL_PARAM_START_IDX; i < _shaderReflectionCache->EntireConstBufferNum; i++) {
-		InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, SystemBufferData[i], 0, 0);
+		if(SystemBufferData[i] != nullptr)
+			InDeviceContext->UpdateSubresource(ConstantBuffers[i], 0, nullptr, SystemBufferData[i], 0, 0);
 	}
 }
 

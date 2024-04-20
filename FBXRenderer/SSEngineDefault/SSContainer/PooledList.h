@@ -11,7 +11,7 @@ namespace SS
 	class PooledList {
 
 	private:
-		T* _data;
+		T* _data = nullptr;
 		uint32 _capacity = 0;
 		uint32 _size = 0;
 
@@ -28,11 +28,15 @@ namespace SS
 		void Clear();
 		void IncreaseCapacityAndCopy(uint32 newCapacity);
 
+
+		FORCEINLINE bool IsFull() const { return _size == _capacity; }
+
 		FORCEINLINE uint32 GetSize() const { return _size; }
 		FORCEINLINE uint32 GetCapacity() const { return _capacity; }
 
 		FORCEINLINE T* GetData() { return _data; }
 		FORCEINLINE T& operator[](const uint32 idx)  const;
+		PooledList<T>& operator=(PooledList<T>&& origin);
 
 	public:
 		class iterator {
@@ -86,18 +90,16 @@ namespace SS
 		FORCEINLINE const_iterator begin() const { return const_iterator(0, this); }
 		FORCEINLINE const_iterator end() const { return const_iterator(_size, this); }
 	};
+
+
 	template <typename T>
 	PooledList<T>::PooledList(uint32 capacity)
 	{
 		_size = 0;
+		_data = nullptr;
 		if (capacity != 0) {
 			_capacity = capacity;
 			_data = (T*)DBG_MALLOC(sizeof(T) * _capacity);
-		}
-		else
-		{
-			_capacity = 0;
-			_data = nullptr;
 		}
 	}
 
@@ -190,5 +192,23 @@ namespace SS
 		assert(idx < _capacity);
 		return _data[idx];
 	}
+
+	template<typename T>
+	inline PooledList<T>& PooledList<T>::operator=(PooledList<T>&& origin)
+	{
+		_size = origin._size;
+		_capacity = origin._capacity;
+		delete _data;
+		_data = origin._data;
+		origin._data = nullptr;
+		origin._size = 0;
+		origin._capacity = 0;
+		// TODO: 여기에 return 문을 삽입합니다.
+	}
+
+
+	// 복사 operator= 만들기
+	// TArray처럼 movetemp 만들기 -> r-value "복사 operator overloading" 만들기
+	// TArray처럼 removeatswap 만들기
 
 }

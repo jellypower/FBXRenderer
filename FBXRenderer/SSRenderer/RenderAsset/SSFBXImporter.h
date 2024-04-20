@@ -21,7 +21,6 @@ public:
 
 private:
 	FbxManager* _FBXManager = nullptr;
-	FbxIOSettings* _IOSetting = nullptr;
 	FbxImporter* _FBXImporter = nullptr;
 	FbxScene* _currentScene = nullptr;
 	SS::FixedStringA<ASSET_NAME_LEN_MAX> _fileName;
@@ -41,8 +40,13 @@ private:
 
 	void ImportCurrentSceneToMaterialAsset();
 	void ImportCurrentSceneToModelAsset();
+	void ImportCurrentSceneToSkeletonAsset();
+	void ImportCurrentSceneToSkeletonAnimAsset();
 	void TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset);
 
+
 	SSGeometryAsset* GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh);
+	SSGeometryAsset* GenerateSkinnedGeometryFromFbxMesh(::FbxMesh* fbxMesh);
+	
 
 };

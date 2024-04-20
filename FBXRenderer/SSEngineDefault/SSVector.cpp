@@ -1,4 +1,5 @@
 #include "SSVector.h"
+#include "SSStaticMath.h"
 
 Vector4f const Vector4f::Forward = Vector4f(0, 0, 1, 0);
 Vector4f const Vector4f::Back = Vector4f(0, 0, -1, 0);
@@ -58,6 +59,17 @@ Transform::Transform()
 Transform::Transform(Vector4f InPos, Quaternion InRot, Vector4f InScale)
 	: Position(InPos), Rotation(InRot), Scale(InScale)
 {
+}
+
+XMMATRIX Transform::AsInverseMatrix() const
+{
+	XMMATRIX MScaling = XMMatrixScalingFromVector(Scale.SimdVec);
+
+	XMMATRIX M  = XMMatrixRotationQuaternion(Rotation.SimdVec);
+	M.r[3] = XMVectorAdd(M.r[3], Position.SimdVec);
+	M = SSStaticMath::InverseRigid(M);
+	M = XMMatrixMultiply(M, MScaling);
+	return M;
 }
 
 Vector2f::Vector2f()

@@ -3,8 +3,8 @@
 
 
 #include <string.h>
-#include <Windows.h>
 
+#include "SSEngineDefault/UtilityFunctions.h"
 #include "SSEngineDefault/SSDebugLogger.h"
 #include "SSEngineDefault/SSNativeKeywords.h"
 
@@ -21,16 +21,6 @@ namespace SS {
 	};
 
 
-	FORCEINLINE uint32 CharStrToUTF16Str(const char* charStr, uint32 charLen, utf16* outUtf16Str, uint32 outUtf16StrBufferSize)
-	{
-		uint32 multibyteLen = MultiByteToWideChar(CP_ACP, 0, charStr, charLen, nullptr, 0);
-		assert(multibyteLen < outUtf16StrBufferSize);
-		multibyteLen = MultiByteToWideChar(CP_ACP, 0, charStr, charLen, outUtf16Str, outUtf16StrBufferSize);
-		outUtf16Str[multibyteLen] = L'\0';
-		return multibyteLen;
-	}
-
-
 	template<uint32 STR_LEN_MAX>
 	class FixedStringA {
 	private:
@@ -42,7 +32,7 @@ namespace SS {
 		FixedStringA(const char* data);
 		FixedStringA(const FixedStringA& rhs);
 		
-		const char* GetData() const { return _dataPool; }
+		const char* C_Str() const { return _dataPool; }
 		FORCEINLINE constexpr uint32 GetCapacity() const { return STR_LEN_MAX; }
 		FORCEINLINE const uint32 GetLen() const { return _len; }
 
@@ -55,7 +45,7 @@ namespace SS {
 		void CutOut(uint32 newStrlen);
 
 		FixedStringA& operator+=(const char* data);
-		FORCEINLINE operator const char* () const { return GetData(); }
+		FORCEINLINE operator const char* () const { return _dataPool; }
 
 		void Clear();
 		
@@ -154,7 +144,7 @@ namespace SS {
 		FixedStringW(const utf16* data);
 		FixedStringW(const FixedStringW& rhs);
 
-		const utf16* GetData() const { return _dataPool; }
+		const utf16* C_Str() const { return _dataPool; }
 		FORCEINLINE constexpr uint32 GetCapacity() const { return STR_LEN_MAX; }
 		FORCEINLINE const uint32 GetLen() const { return _len; }
 
@@ -164,8 +154,10 @@ namespace SS {
 		void Append(const utf16* data);
 		void Append(const utf16* data, uint32 len);
 
+		void CutOut(uint32 newStrlen);
+
 		FixedStringW& operator+=(const utf16* data);
-		FORCEINLINE operator const utf16* () const { return GetData(); }
+		FORCEINLINE operator const utf16* () const { return C_Str(); }
 
 		void Clear();
 	};
@@ -198,7 +190,7 @@ namespace SS {
 	FixedStringW<STR_LEN_MAX>::FixedStringW(const FixedStringW& rhs)
 	{
 		_len = rhs.GetLen();
-		wcscpy(_dataPool, rhs.GetData());
+		wcscpy(_dataPool, rhs.C_Str());
 	}
 
 	template <uint32 STR_LEN_MAX>
@@ -234,6 +226,14 @@ namespace SS {
 		assert(_len + len < STR_LEN_MAX);
 		wcsncpy(_dataPool + _len, data, len);
 		_len += len;
+		_dataPool[_len] = L'\0';
+	}
+
+	template <uint32 STR_LEN_MAX>
+	void FixedStringW<STR_LEN_MAX>::CutOut(uint32 newStrlen)
+	{
+		assert(newStrlen < _len);
+		_len = newStrlen;
 		_dataPool[_len] = L'\0';
 	}
 

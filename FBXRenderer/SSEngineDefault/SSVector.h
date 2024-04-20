@@ -172,8 +172,9 @@ struct Transform {
 				Rotation.SimdVec,	// 회전
 				Position.SimdVec	// 위치
 			);
-
 	}
+	XMMATRIX AsInverseMatrix() const;
+
 	FORCEINLINE Vector4f GetForward() const
 	{
 		return XMVector3Rotate(Vector4f::Forward.SimdVec, Rotation.SimdVec);

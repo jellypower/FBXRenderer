@@ -18,12 +18,15 @@ SSTextureAssetManager::SSTextureAssetManager(uint32 poolCapacity, uint32 hashCap
 SSTextureAssetManager::~SSTextureAssetManager()
 { }
 
-SSTextureAsset* SSTextureAssetManager::FindAssetWithNameInternal(const char* name)
+SSTextureAsset* SSTextureAssetManager::FindAssetWithNameInternal(const char* name, TexToReturnOnFail OnFailReturn)
 {
 	uint32 idxOut = SS_UINT32_MAX;
 	if (_assetHashmap.TryFind(name, idxOut) == FindResult::Success)
 		return _textureList[idxOut];
-	return _textureList[0];
+
+	if (OnFailReturn == TexToReturnOnFail::Return_NULL) return nullptr;
+
+	return _textureList[static_cast<uint32>(OnFailReturn)];
 }
 
 

@@ -13,6 +13,8 @@ enum class AssetType
 	Model,
 	ModelCombination,
 	Texture,
+	Skeleton,
+	SkeletonAnim,
 
 	Count
 };
@@ -27,8 +29,9 @@ protected:
 	const AssetType _assetType;
 
 public:
-	FORCEINLINE const char* GetAssetName() const { return _assetName.GetData(); }
-	FORCEINLINE const utf16* GetAssetPath() const { return _assetPath.GetData(); }
+	FORCEINLINE const char* GetAssetName() const { return _assetName.C_Str(); }
+	FORCEINLINE const utf16* GetAssetPath() const { return _assetPath.C_Str(); }
+	FORCEINLINE const uint32 GetAssetPathLen() const { return _assetPath.GetLen(); }
 	FORCEINLINE const AssetType GetAssetType() const { return _assetType; }
 
 protected:

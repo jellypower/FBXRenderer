@@ -46,7 +46,7 @@ HRESULT SSGeometryAsset::UpdateDataOnGPU(ID3D11Device* InDevice)
 
 	D3D11_BUFFER_DESC bd = {};
 	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.ByteWidth = _eachVertexDataSize * _vertexDataNum;
+	bd.ByteWidth = _eachVertexDataSize * _vertexCnt;
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = 0;
 

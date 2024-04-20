@@ -35,6 +35,7 @@ public:
 	}
 
 	static constexpr char SSDefaultPbrShaderName[] = "SSDefaultPbr";
+	static constexpr char SSDefaultPbrSkinnedShaderName[] = "SSDefaultPbrSkinned";
 
 
 

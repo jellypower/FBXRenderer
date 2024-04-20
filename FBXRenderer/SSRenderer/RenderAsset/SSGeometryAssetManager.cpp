@@ -29,7 +29,23 @@ void SSGeometryAssetManager::InsertNewGeometry(SSGeometryAsset* newGeometry)
 {
 	_assetPool.PushBack(newGeometry);
 	InsertResult result = _assetHashmap.TryInsert(newGeometry->GetAssetName(), _assetPool.GetSize() - 1);
-	WASSERT_WITH_MESSAGE(result == InsertResult::Success, "FBX Asset's object names must be unique");
+
+	if(result != InsertResult::Success)
+	{
+		SS::FixedStringA<300> ErrorString;
+		ErrorString = "new geometry insertion failed on hashmap. (geometry name: ";
+		ErrorString += newGeometry->GetAssetName();
+		ErrorString += "), (ErrorCode: ";
+
+		switch (result)
+		{
+		case InsertResult::CollisionLimit: ErrorString += "CollisionLimit)";
+		case InsertResult::InvalidStrKey: ErrorString += "InvalidStrKey)";
+		case InsertResult::KeyAlreadyExist: ErrorString += "KeyAlreadyExist)";
+		}
+		ASSERT_WITH_MESSAGE(result == InsertResult::Success, ErrorString);
+		MessageBoxA(nullptr, ErrorString, "Alert", MB_OK);
+	}
 }
 
 HRESULT SSGeometryAssetManager::SendAllGeometryAssetToGPUTemp(ID3D11Device* InDevice)

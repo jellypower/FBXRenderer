@@ -1,21 +1,22 @@
 #pragma once
+#include <SSEngineDefault/SSNativeKeywords.h>
 #include <DirectXMath.h>
 
 using namespace DirectX;
 
-class SSStaticMath
+namespace SSStaticMath
 {
-public:
-	__forceinline static float RadToDegrees(float InRad);
-	__forceinline static float DegToRadians(float InDeg);
+
+	FORCEINLINE float RadToDegrees(float InRad)
+	{
+		return InRad / XM_PI * 180.f;
+	}
+
+	FORCEINLINE float DegToRadians(float InDeg)
+	{
+		return InDeg / 180.f * XM_PI;
+	}
+
+
+	XMMATRIX InverseRigid(XMMATRIX InMatrix);
 };
-
-inline float SSStaticMath::RadToDegrees(float InRad)
-{
-	return InRad / XM_PI * 180.f;
-}
-
-inline float SSStaticMath::DegToRadians(float InDeg)
-{
-	return InDeg / 180.f * XM_PI;
-}

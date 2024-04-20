@@ -30,19 +30,33 @@ SSMaterialAssetManager::~SSMaterialAssetManager()
 
 void SSMaterialAssetManager::InsertNewMaterial(SSMaterialAsset* newMaterialAsset)
 {
+	if (_assetPool.IsFull()) _assetPool.IncreaseCapacityAndCopy(_assetPool.GetCapacity() * 2);
 	_assetPool.PushBack(newMaterialAsset);
 	InsertResult result = _assetHash.TryInsert(newMaterialAsset->GetAssetName(), _assetPool.GetSize() - 1);
-	WASSERT_WITH_MESSAGE(result == InsertResult::Success, "new material insertion failed");
 
+	if(result != InsertResult::Success)
+	{
+		SS::FixedStringA<300> ErrorString;
+		ErrorString = "new material insertion failed on hashmap. (material name: ";
+		ErrorString += newMaterialAsset->GetAssetName();
+		ErrorString += "), (ErrorCode: ";
+
+		switch(result)
+		{
+		case InsertResult::CollisionLimit: ErrorString += "CollisionLimit)";
+		case InsertResult::InvalidStrKey: ErrorString += "InvalidStrKey)";
+		case InsertResult::KeyAlreadyExist: ErrorString += "KeyAlreadyExist)";
+		}
+
+		ASSERT_WITH_MESSAGE(result == InsertResult::Success, ErrorString);
+		MessageBoxA(nullptr, ErrorString, "Alert", MB_OK);
+	}
 }
 
 void SSMaterialAssetManager::CreateTempMaterials(ID3D11Device* InDevice)
 {
 	SSMaterialAsset* newMaterial = DBG_NEW SSPbrMaterialAsset("SSDefaultPbr");
-	
 
-	// HACK: create texture
-	SSTextureAsset* colortTexture = SSTextureAssetManager::FindAssetWithName("rp_nathan_animated_003_dif");
 
 	// HACK: sampler
 	{

@@ -6,12 +6,14 @@
 #include "SSModelAssetManager.h"
 #include "SSModelCombinationAssetManager.h"
 #include "SSShaderAssetManager.h"
+#include "SSSkeletonAssetManager.h"
+#include "SSSkeletonAnimAssetManager.h"
 #include "SSTextureAssetManager.h"
 #include "AssetType/SSModelCombinationAsset.h"
+#include "AssetType/SSSkeletonAsset.h"
 #include "AssetType/SSMaterialAssetDetail/SSPbrMaterialAsset.h"
 
-#include "capnp/message.h"
-#include "capnp/compat/json.h"
+
 #include "Serializable/SSPbrMaterialData.capnp.h"
 #include "Serializable/SSTextureAssetManagingList.capnp.h"
 #include "SSRenderer/SSSamplerPool.h"
@@ -27,11 +29,7 @@ namespace SSFbxName
 }
 
 
-
-
-void ExtractFileNameFromFilePath(
-	SS::FixedStringA<ASSET_NAME_LEN_MAX>& OutFileName,
-	const char* InFilePath)
+void ExtractFileNameFromFilePath(SS::FixedStringA<128>& OutFileName, const char* InFilePath)
 {
 	const char* fileNameStart = strrchr(InFilePath, '/');
 	if (fileNameStart == nullptr)
@@ -42,41 +40,29 @@ void ExtractFileNameFromFilePath(
 	OutFileName.CutOut(cutOutLen);
 }
 
+
 SSFBXImporter::SSFBXImporter()
 {
 	_FBXManager = ::FbxManager::Create();
-	_IOSetting = FbxIOSettings::Create(_FBXManager, IOSROOT);
 	_FBXImporter = ::FbxImporter::Create(_FBXManager, "");
-
-
-	_IOSetting->SetBoolProp(IMP_FBX_MATERIAL, true);
-	_FBXManager->SetIOSettings(_IOSetting);
 
 }
 
 SSFBXImporter::~SSFBXImporter()
 {
 	_FBXImporter->Destroy();
-	_IOSetting->Destroy();
 	_FBXManager->Destroy();
 }
 
-HRESULT SSFBXImporter::LoadModelAssetFromFBXFile(const char* filePath)
+HRESULT SSFBXImporter::LoadModelAssetFromFBXFile(const utf8* filePath)
 {
-
-
-	if (!_FBXImporter->Initialize(filePath, -1, _FBXManager->GetIOSettings())) {
+	if (!_FBXImporter->Initialize(filePath)) {
 		SS_CLASS_WARNING_LOG("%s", _FBXImporter->GetStatus().GetErrorString());
 		return E_FAIL;
 	}
 
 	_currentScene = FbxScene::Create(_FBXManager, filePath);
 	_FBXImporter->Import(_currentScene);
-
-	const FbxSystemUnit meterUnit(100);
-	constexpr FbxSystemUnit::ConversionOptions conversionOptions
-		= { true, true, true, true, true, true };
-	meterUnit.ConvertScene(_currentScene, conversionOptions);
 
 	_filePath = filePath;
 	ExtractFileNameFromFilePath(_fileName, _filePath);
@@ -97,6 +83,10 @@ void SSFBXImporter::StoreCurrentFBXModelAssetToAssetManager()
 {
 	ImportCurrentSceneToMaterialAsset();
 	SS_LOG("========================================================\n");
+	ImportCurrentSceneToSkeletonAsset();
+	SS_LOG("========================================================\n");
+	ImportCurrentSceneToSkeletonAnimAsset();
+	SS_LOG("========================================================\n");
 	ImportCurrentSceneToModelAsset();
 }
 
@@ -111,7 +101,7 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 	for (uint32 i = 0; i < matCnt; i++) {
 		FbxSurfaceMaterial* material = _currentScene->GetMaterial(i);
 
-		SS_LOG("material name: %s, shading model: %s unique id: %llu\n",
+		SS_LOG("material name: %s, shading model: %s, unique id: %llu\n",
 			material->GetNameOnly().Buffer(),
 			material->ShadingModel.Get().Buffer(),
 			material->GetUniqueID());
@@ -132,8 +122,8 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 			{
 				const FbxFileTexture* fbxTexture = prop.GetSrcObject<FbxFileTexture>();
 				ExtractFileNameFromFilePath(outAssetName, fbxTexture->GetFileName());
-				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.GetData());
-				pbrMaterial->_textureNames[TX_BASE_COLOR_IDX] = outAssetName;
+				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.C_Str());
+				pbrMaterial->_textureNames[SS_PBR_TX_BASE_COLOR_IDX] = outAssetName;
 			}
 		}
 
@@ -147,8 +137,8 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 			{
 				const FbxFileTexture* fbxTexture = prop.GetSrcObject<FbxFileTexture>();
 				ExtractFileNameFromFilePath(outAssetName, fbxTexture->GetFileName());
-				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.GetData());
-				pbrMaterial->_textureNames[TX_NORMAL_IDX] = outAssetName;
+				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.C_Str());
+				pbrMaterial->_textureNames[SS_PBR_TX_NORMAL_IDX] = outAssetName;
 			}
 		}
 
@@ -162,8 +152,8 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 			{
 				const FbxFileTexture* fbxTexture = prop.GetSrcObject<FbxFileTexture>();
 				ExtractFileNameFromFilePath(outAssetName, fbxTexture->GetFileName());
-				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.GetData());
-				pbrMaterial->_textureNames[TX_EMISSIVE_IDX] = outAssetName;
+				SS_LOG("\t%s name: %s\n", prop.GetNameAsCStr(), outAssetName.C_Str());
+				pbrMaterial->_textureNames[SS_PBR_TX_EMISSIVE_IDX] = outAssetName;
 			}
 		}
 
@@ -187,14 +177,14 @@ void SSFBXImporter::ImportCurrentSceneToMaterialAsset()
 
 		for (prop = material->GetFirstProperty(); prop.IsValid(); prop = material->GetNextProperty(prop))
 		{
-			SS_LOG("\t\t%s: %s\n", prop.GetNameAsCStr(), prop.GetPropertyDataType().GetName());
+			//			SS_LOG("\t\t%s: %s\n", prop.GetNameAsCStr(), prop.GetPropertyDataType().GetName());
 
 			if (strcmp(prop.GetNameAsCStr(), SSFbxName::BumpMap) == 0)
 			{
 				const FbxFileTexture* fbxTexture = prop.GetSrcObject<FbxFileTexture>();
 				ExtractFileNameFromFilePath(outAssetName, fbxTexture->GetFileName());
-				SS_LOG("\t%s name: %s\n", SSFbxName::BumpMap, outAssetName.GetData());
-				pbrMaterial->_textureNames[TX_NORMAL_IDX] = outAssetName;
+				SS_LOG("\t%s name: %s\n", SSFbxName::BumpMap, outAssetName.C_Str());
+				pbrMaterial->_textureNames[SS_PBR_TX_NORMAL_IDX] = outAssetName;
 			}
 
 		}
@@ -214,7 +204,6 @@ void SSFBXImporter::ImportCurrentSceneToModelAsset()
 		return;
 	}
 
-
 	FbxNode* rootNode = _currentScene->GetRootNode();
 	uint32 childCount = rootNode->GetChildCount();
 
@@ -232,6 +221,163 @@ void SSFBXImporter::ImportCurrentSceneToModelAsset()
 	SSModelCombinationAssetManager::Get()->InsertNewAsset(newModelCombAsset);
 }
 
+FbxNode* FindSkeletonRootRecursion(FbxNode* searchNode)
+{
+	if (searchNode->GetNodeAttribute() != nullptr &&
+		searchNode->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton) return searchNode;
+
+	for (uint32 i = 0; i < searchNode->GetChildCount(); i++)
+	{
+		FbxNode* childItem = FindSkeletonRootRecursion(searchNode->GetChild(i));
+		if (childItem != nullptr &&
+			childItem->GetNodeAttribute() != nullptr &&
+			childItem->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			return childItem;
+	}
+	return nullptr;
+}
+
+
+Transform ExtractTransformFromNode(FbxNode* node, FbxTime fbxTime = FBXSDK_TIME_INFINITE)
+{
+	FbxAMatrix fbxMat;
+	fbxMat.SetIdentity();
+	fbxMat.SetT(node->GetGeometricTranslation(FbxNode::eSourcePivot));
+	fbxMat.SetR(node->GetGeometricRotation(FbxNode::eSourcePivot));
+	fbxMat.SetS(node->GetGeometricScaling(FbxNode::eSourcePivot));
+
+	fbxMat = node->EvaluateLocalTransform(fbxTime) * fbxMat;
+
+	const FbxDouble3 fbxTranslate = fbxMat.GetT();
+	Transform transform;
+
+	transform.Position.X = -fbxTranslate.mData[0] * 0.01;
+	transform.Position.Y = fbxTranslate.mData[1] * 0.01;
+	transform.Position.Z = fbxTranslate.mData[2] * 0.01;
+	transform.Position.W = 0;
+
+	const FbxDouble3 fbxScale = fbxMat.GetS();
+	transform.Scale.X = fbxScale.mData[0];
+	transform.Scale.Y = fbxScale.mData[1];
+	transform.Scale.Z = fbxScale.mData[2];
+	transform.Scale.W = 0;
+
+	const FbxDouble3 fbxRotation = fbxMat.GetR(); // pitch roll yaw
+
+	Quaternion curRotation;
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Right, SSStaticMath::DegToRadians(fbxRotation.mData[0]));
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Up, -SSStaticMath::DegToRadians(fbxRotation.mData[1]));
+	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Forward, -SSStaticMath::DegToRadians(fbxRotation.mData[2]));
+
+	transform.Rotation = curRotation;
+
+	return transform;
+}
+
+uint32 FindFbxNodeWholeChildCnt(FbxNode* searchNode)
+{
+	uint32 sum = 1;
+	for (uint32 i = 0; i < searchNode->GetChildCount(); i++)
+	{
+		sum += FindFbxNodeWholeChildCnt(searchNode->GetChild(i));
+	}
+
+	return sum;
+}
+
+void ImportBoneToSkeletonRecursion(SS::PooledList<BoneNode>& boneList, FbxNode* node, uint16 parentBoneIdx)
+{
+	uint32 childCnt = node->GetChildCount();
+
+	boneList.PushBack(BoneNode(node->GetName(), parentBoneIdx, childCnt));
+	uint16 boneListLastIdx = boneList.GetSize() - 1;
+
+
+	BoneNode& boneNode = boneList[boneListLastIdx];
+	if (parentBoneIdx != 65535)
+		boneList[parentBoneIdx]._childs.PushBack(boneListLastIdx);
+
+	boneNode._length = node->GetSkeleton()->LimbLength.Get();
+	boneNode._transform = ExtractTransformFromNode(node);
+
+
+
+	for (uint32 i = 0; i < childCnt; i++)
+	{
+		ImportBoneToSkeletonRecursion(boneList, node->GetChild(i), boneListLastIdx);
+	}
+}
+
+void SSFBXImporter::ImportCurrentSceneToSkeletonAsset()
+{
+	if (_currentScene == nullptr) {
+		SS_CLASS_WARNING_LOG("No scene to load");
+		return;
+	}
+
+	FbxNode* skeletonRoot = FindSkeletonRootRecursion(_currentScene->GetRootNode());
+
+	uint32 childCount = 0;
+	if (skeletonRoot != nullptr)
+	{
+		childCount = FindFbxNodeWholeChildCnt(skeletonRoot);
+
+		SSSkeletonAsset* newSkeleton = DBG_NEW SSSkeletonAsset(skeletonRoot->GetName(), childCount);
+		ImportBoneToSkeletonRecursion(newSkeleton->_boneList, skeletonRoot, 65535);
+		newSkeleton->_assetPath = _FBXImporter->GetFileName().Buffer();
+		newSkeleton->_assetName = _fileName.C_Str();
+		newSkeleton->_assetName += ".skl";
+		SSSkeletonAssetManager::Get()->InsertNewAsset(newSkeleton);
+	}
+
+}
+
+void SSFBXImporter::ImportCurrentSceneToSkeletonAnimAsset()
+{
+	FbxAnimStack* currAnimStack = _currentScene->GetCurrentAnimationStack();
+	if (currAnimStack == nullptr) return;
+
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> assetName = _fileName;
+	assetName += ".skl";
+	SSSkeletonAsset* skeletonAsset = SSSkeletonAssetManager::FindAssetWithName(assetName);
+	if (skeletonAsset == nullptr) return;
+
+	assetName = _fileName;
+	assetName += ".ska";
+
+
+
+	FbxString animStackName = currAnimStack->GetName();
+	FbxTakeInfo* takeInfo = _currentScene->GetTakeInfo(animStackName);
+	FbxTime start = takeInfo->mLocalTimeSpan.GetStart();
+	FbxTime end = takeInfo->mLocalTimeSpan.GetStop();
+
+
+	int64 frameStart = start.GetFrameCount(FbxTime::eFrames24);
+	int64 frameEnd = end.GetFrameCount(FbxTime::eFrames24);
+	int64 frameCnt = frameEnd - frameStart + 1;
+
+	SSSkeletonAnimAsset* skeletonAnimAsset = DBG_NEW SSSkeletonAnimAsset(assetName, skeletonAsset, frameCnt);
+	const SS::PooledList<BoneNode>& bones = skeletonAsset->GetBones();
+
+	for (uint32 skeletonIdx = 0; skeletonIdx < bones.GetSize(); skeletonIdx++)
+	{
+		FbxNode* currentNode = _currentScene->FindNodeByName(bones[skeletonIdx]._boneName.C_Str());
+		assert(currentNode);
+
+		for (int64 frameIdx = frameStart; frameIdx <= frameEnd; ++frameIdx)
+		{
+			FbxTime currTime;
+			currTime.SetFrame(frameIdx, FbxTime::eFrames24);
+			Transform transform = ExtractTransformFromNode(currentNode, currTime);
+			skeletonAnimAsset->SetAnimStackTransform(skeletonIdx, frameIdx - frameStart, transform);
+		}
+	}
+
+	SSSkeletonAnimAssetManager::Get()->InsertNewAsset(skeletonAnimAsset);
+
+}
+
 void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* parentAsset)
 {
 	uint32 childCount = node->GetChildCount();
@@ -244,7 +390,13 @@ void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* pa
 		{
 			// geometry asset creation
 			FbxMesh* fbxMesh = node->GetMesh();
-			SSGeometryAsset* newGeometry = GenerateGeometryFromFbxMesh(fbxMesh);
+
+			SSGeometryAsset* newGeometry = nullptr;
+
+			if (fbxMesh->GetDeformerCount() == 0)
+				newGeometry = GenerateGeometryFromFbxMesh(fbxMesh);
+			else
+				newGeometry = GenerateSkinnedGeometryFromFbxMesh(fbxMesh);
 
 			// model asset creation
 			SS::FixedStringA<ASSET_NAME_LEN_MAX> assetName;
@@ -268,7 +420,13 @@ void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* pa
 
 				SSMaterialAsset* modelMaterial = SSMaterialAssetManager::FindAssetWithName(assetName);
 				if (modelMaterial == nullptr)
+				{
 					modelMaterial = SSMaterialAssetManager::GetEmptyAsset();
+				}
+				else if (newGeometry->GetMeshType() == EMeshType::Skinned)
+				{
+					modelMaterial->ChangeShader(SSShaderAssetManager::SSDefaultPbrSkinnedShaderName);
+				}
 
 				newModel->SetMaterial(modelMaterial, i);
 
@@ -332,6 +490,10 @@ void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* pa
 		}
 		break;
 
+		case FbxNodeAttribute::eSkeleton:
+		{
+			return;
+		}
 		default:
 		{
 			thisAsset = DBG_NEW SSPlaceableAsset(AssetType::Blank, childCount);
@@ -340,42 +502,14 @@ void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* pa
 		}
 
 
+
 	}
+
 
 	if (thisAsset == nullptr)
 		thisAsset = DBG_NEW SSPlaceableAsset(AssetType::Blank, childCount);
 
-
-	FbxAMatrix fbxMat;
-	fbxMat.SetIdentity();
-	fbxMat.SetT(node->GetGeometricTranslation(FbxNode::eSourcePivot));
-	fbxMat.SetR(node->GetGeometricRotation(FbxNode::eSourcePivot));
-	fbxMat.SetS(node->GetGeometricScaling(FbxNode::eSourcePivot));
-
-	fbxMat = node->EvaluateLocalTransform() * fbxMat;
-
-
-	assert(thisAsset != nullptr);
-	const FbxDouble3 fbxTranslate = fbxMat.GetT();
-	thisAsset->_transform.Position.X = -fbxTranslate.mData[0];
-	thisAsset->_transform.Position.Y = fbxTranslate.mData[1];
-	thisAsset->_transform.Position.Z = fbxTranslate.mData[2];
-	thisAsset->_transform.Position.W = 0;
-
-	const FbxDouble3 fbxScale = fbxMat.GetS();
-	thisAsset->_transform.Scale.X = fbxScale.mData[0];
-	thisAsset->_transform.Scale.Y = fbxScale.mData[1];
-	thisAsset->_transform.Scale.Z = fbxScale.mData[2];
-	thisAsset->_transform.Scale.W = 0;
-
-	const FbxDouble3 fbxRotation = fbxMat.GetR(); // pitch roll yaw
-
-	Quaternion curRotation;
-	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Right, SSStaticMath::DegToRadians(fbxRotation.mData[0]));
-	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Up, -SSStaticMath::DegToRadians(fbxRotation.mData[1]));
-	curRotation = Quaternion::RotateAxisAngle(curRotation, Vector4f::Forward, -SSStaticMath::DegToRadians(fbxRotation.mData[2]));
-
-	thisAsset->_transform.Rotation = curRotation;
+	thisAsset->_transform = ExtractTransformFromNode(node);
 
 	thisAsset->_parent = parentAsset;
 	parentAsset->_childs.PushBack(thisAsset);
@@ -384,7 +518,17 @@ void SSFBXImporter::TraverseNodesRecursion(::FbxNode* node, SSPlaceableAsset* pa
 	}
 }
 
+int32 FindBoneIdxWithNameFromSkeleton(const SSSkeletonAsset* InAsset, const char* name)
+{
+	const SS::PooledList<BoneNode>& bones = InAsset->GetBones();
 
+	for (uint32 i = 0; i < bones.GetSize(); i++)
+	{
+		if (strcmp(bones[i]._boneName, name) == 0) return i;
+	}
+
+	return -1;
+}
 
 SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 {
@@ -413,7 +557,7 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 	}
 
 
-	// *calculate vertex unit
+	// * calculate vertex unit
 	NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPoint;
 	if (FbxNormal->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
 		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
@@ -423,21 +567,22 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
 
 	NewGeometryAsset->_drawTopologyType = EGeometryDrawTopology::TriangleList;
+	NewGeometryAsset->_meshType = EMeshType::Rigid;
 
 	// 2. alloc vertex memory
 	switch (NewGeometryAsset->_vertexUnit) {
 
 	case EVertexUnit::VertexPerPoint:
-		NewGeometryAsset->_vertexDataNum = ControlPointNum; break;
+		NewGeometryAsset->_vertexCnt = ControlPointNum; break;
 	case EVertexUnit::VertexPerPolygon:
-		NewGeometryAsset->_vertexDataNum = PolygonVertexNum; break;
+		NewGeometryAsset->_vertexCnt = PolygonVertexNum; break;
 
 	}
 
 
 	NewGeometryAsset->_eachVertexDataSize = sizeof(SSDefaultVertex);
-	NewGeometryAsset->_vertexData = (SSDefaultVertex*)DBG_MALLOC(NewGeometryAsset->_eachVertexDataSize * NewGeometryAsset->_vertexDataNum);
-	SSDefaultVertex* phVertices = NewGeometryAsset->_vertexData;
+	NewGeometryAsset->_vertexData = DBG_MALLOC(NewGeometryAsset->_eachVertexDataSize * NewGeometryAsset->_vertexCnt);
+	SSDefaultVertex* defaultVertices = (SSDefaultVertex*)NewGeometryAsset->_vertexData;
 
 	// 3. alloc index memory
 	if (fbxMesh->GetNode()->GetMaterial(0) != nullptr)
@@ -482,16 +627,17 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 	FbxVector4* ControlPoints = fbxMesh->GetControlPoints();
 	uint32 CurIndexDataIdx[SUBGEOM_COUNT_MAX] = { 0, };
 
+
 	switch (NewGeometryAsset->_vertexUnit) {
 
 	case EVertexUnit::VertexPerPoint:
 	{
 
 		for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
-			phVertices[i].Pos.X = -ControlPoints[i].mData[0];
-			phVertices[i].Pos.Y = ControlPoints[i].mData[1];
-			phVertices[i].Pos.Z = ControlPoints[i].mData[2];
-			phVertices[i].Pos.W = ControlPoints[i].mData[3];
+			defaultVertices[i].Pos.X = -ControlPoints[i].mData[0] * 0.01;
+			defaultVertices[i].Pos.Y = ControlPoints[i].mData[1] * 0.01;
+			defaultVertices[i].Pos.Z = ControlPoints[i].mData[2] * 0.01;
+			defaultVertices[i].Pos.W = ControlPoints[i].mData[3] * 0.01;
 		}
 
 		if (fbxMesh->GetElementMaterial() != nullptr && fbxMesh->GetElementMaterial()->GetMappingMode() == FbxLayerElement::eByPolygon)
@@ -503,9 +649,11 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 				uint32 idxDataStart = NewGeometryAsset->_indexDataStartIndex[matIdx];
 				for (uint32 j = 1; j < thisPolygonSize - 1; j++)
 				{
-					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]++] = fbxMesh->GetPolygonVertex(i, j + 1);
-					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]++] = fbxMesh->GetPolygonVertex(i, j);
-					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]++] = fbxMesh->GetPolygonVertex(i, 0);
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]] = fbxMesh->GetPolygonVertex(i, j + 1);
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 1] = fbxMesh->GetPolygonVertex(i, j);
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 2] = fbxMesh->GetPolygonVertex(i, 0);
+
+					CurIndexDataIdx[matIdx] += 3;
 				}
 			}
 		}
@@ -537,10 +685,10 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 			for (int32 j = 0; j < thisPolygonVerticesCount; j++) {
 				int32 ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
 				FbxVector4 vertexPos = fbxMesh->GetControlPointAt(ControlPointIdx);
-				phVertices[VertexIdxCounter].Pos.X = -vertexPos.mData[0];
-				phVertices[VertexIdxCounter].Pos.Y = vertexPos.mData[1];
-				phVertices[VertexIdxCounter].Pos.Z = vertexPos.mData[2];
-				phVertices[VertexIdxCounter].Pos.W = vertexPos.mData[3];
+				defaultVertices[VertexIdxCounter].Pos.X = -vertexPos.mData[0] * 0.01;
+				defaultVertices[VertexIdxCounter].Pos.Y = vertexPos.mData[1] * 0.01;
+				defaultVertices[VertexIdxCounter].Pos.Z = vertexPos.mData[2] * 0.01;
+				defaultVertices[VertexIdxCounter].Pos.W = vertexPos.mData[3] * 0.01;
 
 				VertexIdxCounter++;
 			}
@@ -600,11 +748,11 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(i);
 				normalVector.Normalize();
 
-				phVertices[i].Normal.X = -normalVector.mData[0];
-				phVertices[i].Normal.Y = normalVector.mData[1];
-				phVertices[i].Normal.Z = normalVector.mData[2];
-				phVertices[i].Normal.W = normalVector.mData[3];
-				phVertices[i].Normal = phVertices[i].Normal.Get3DNormalized();
+				defaultVertices[i].Normal.X = -normalVector.mData[0];
+				defaultVertices[i].Normal.Y = normalVector.mData[1];
+				defaultVertices[i].Normal.Z = normalVector.mData[2];
+				defaultVertices[i].Normal.W = normalVector.mData[3];
+				defaultVertices[i].Normal = defaultVertices[i].Normal.Get3DNormalized();
 			}
 
 			break;
@@ -616,11 +764,11 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 				int32 FbxNormalIdx = FbxNormal->GetIndexArray().GetAt(i);
 				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx);
 
-				phVertices[i].Normal.X = -normalVector.mData[0];
-				phVertices[i].Normal.Y = normalVector.mData[1];
-				phVertices[i].Normal.Z = normalVector.mData[2];
-				phVertices[i].Normal.W = normalVector.mData[3];
-				phVertices[i].Normal = phVertices[i].Normal.Get3DNormalized();
+				defaultVertices[i].Normal.X = -normalVector.mData[0];
+				defaultVertices[i].Normal.Y = normalVector.mData[1];
+				defaultVertices[i].Normal.Z = normalVector.mData[2];
+				defaultVertices[i].Normal.W = normalVector.mData[3];
+				defaultVertices[i].Normal = defaultVertices[i].Normal.Get3DNormalized();
 			}
 
 			break;
@@ -648,16 +796,16 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 
 					FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(ControlPointIdx);
 					normalVector.Normalize();
-					phVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
-					phVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
-					phVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
-					phVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
-					phVertices[VertexIdxCounter].Normal = phVertices[VertexIdxCounter].Normal.Get3DNormalized();
+					defaultVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					defaultVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					defaultVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					defaultVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
+					defaultVertices[VertexIdxCounter].Normal = defaultVertices[VertexIdxCounter].Normal.Get3DNormalized();
 
 					VertexIdxCounter++;
 				}
 			}
-			assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+			assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 
 			break;
 		case FbxLayerElement::eIndex:
@@ -676,16 +824,16 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 					FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(normalIdx);
 					normalVector.Normalize();
 
-					phVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
-					phVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
-					phVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
-					phVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
-					phVertices[VertexIdxCounter].Normal = phVertices[VertexIdxCounter].Normal.Get3DNormalized();
+					defaultVertices[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					defaultVertices[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					defaultVertices[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					defaultVertices[VertexIdxCounter].Normal.W = normalVector.mData[3];
+					defaultVertices[VertexIdxCounter].Normal = defaultVertices[VertexIdxCounter].Normal.Get3DNormalized();
 
 					VertexIdxCounter++;
 				}
 			}
-			assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+			assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 			break;
 		default:
 			free(NewGeometryAsset->_indexData);
@@ -719,8 +867,8 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 				for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
 					FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(i);
 
-					phVertices[i].Uv[uvIdx].X = uvVector.mData[0];
-					phVertices[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+					defaultVertices[i].Uv[uvIdx].X = uvVector.mData[0];
+					defaultVertices[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
 				}
 
 				break;
@@ -732,8 +880,8 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 					int32 FbxUvIdx = fbxUVItem->GetIndexArray().GetAt(i);
 					FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(FbxUvIdx);
 
-					phVertices[i].Uv[uvIdx].X = uvVector.mData[0];
-					phVertices[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+					defaultVertices[i].Uv[uvIdx].X = uvVector.mData[0];
+					defaultVertices[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
 				}
 
 				break;
@@ -758,13 +906,13 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 						uint32 uvIdx = fbxMesh->GetTextureUVIndex(i, j);
 						FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(uvIdx);
 
-						phVertices[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
-						phVertices[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+						defaultVertices[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
+						defaultVertices[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
 
 						VertexIdxCounter++;
 					}
 				}
-				assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 
 				break;
 			case FbxLayerElement::eIndex:
@@ -778,13 +926,13 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 						uint32 polygonVertexIdx = fbxMesh->GetTextureUVIndex(i, j);
 						FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(polygonVertexIdx);
 
-						phVertices[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
-						phVertices[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+						defaultVertices[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
+						defaultVertices[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
 
 						VertexIdxCounter++;
 					}
 				}
-				assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 
 				break;
 			default:
@@ -820,11 +968,11 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 				{
 					FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(i);
 
-					phVertices[i].Tangent.X = tanVector.mData[0];
-					phVertices[i].Tangent.Y = tanVector.mData[1];
-					phVertices[i].Tangent.Z = tanVector.mData[2];
-					phVertices[i].Tangent.W = tanVector.mData[3];
-					phVertices[i].Tangent = phVertices[i].Tangent.Get3DNormalized();
+					defaultVertices[i].Tangent.X = tanVector.mData[0];
+					defaultVertices[i].Tangent.Y = tanVector.mData[1];
+					defaultVertices[i].Tangent.Z = tanVector.mData[2];
+					defaultVertices[i].Tangent.W = tanVector.mData[3];
+					defaultVertices[i].Tangent = defaultVertices[i].Tangent.Get3DNormalized();
 				}
 				break;
 			case FbxLayerElement::eIndex:
@@ -834,11 +982,11 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 					int32 tangentIdx = fbxTangent->GetIndexArray().GetAt(i);
 					FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(tangentIdx);
 
-					phVertices[i].Tangent.X = -tanVector.mData[0];
-					phVertices[i].Tangent.Y = tanVector.mData[1];
-					phVertices[i].Tangent.Z = tanVector.mData[2];
-					phVertices[i].Tangent.W = tanVector.mData[3];
-					phVertices[i].Tangent = phVertices[i].Tangent.Get3DNormalized();
+					defaultVertices[i].Tangent.X = -tanVector.mData[0];
+					defaultVertices[i].Tangent.Y = tanVector.mData[1];
+					defaultVertices[i].Tangent.Z = tanVector.mData[2];
+					defaultVertices[i].Tangent.W = tanVector.mData[3];
+					defaultVertices[i].Tangent = defaultVertices[i].Tangent.Get3DNormalized();
 				}
 				break;
 			}
@@ -859,16 +1007,16 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 
 						FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(ControlPointIdx);
 						tanVector.Normalize();
-						phVertices[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
-						phVertices[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
-						phVertices[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
-						phVertices[VertexIdxCounter].Tangent.W = tanVector.mData[3];
-						phVertices[i].Tangent = phVertices[i].Tangent.Get3DNormalized();
+						defaultVertices[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
+						defaultVertices[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
+						defaultVertices[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
+						defaultVertices[VertexIdxCounter].Tangent.W = tanVector.mData[3];
+						defaultVertices[i].Tangent = defaultVertices[i].Tangent.Get3DNormalized();
 
 						VertexIdxCounter++;
 					}
 				}
-				assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 				break;
 
 			case FbxLayerElement::eIndex:
@@ -883,16 +1031,16 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 						uint32 tangentIdx = fbxTangent->GetIndexArray().GetAt(ControlPointIdx);
 						FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(tangentIdx);
 						tanVector.Normalize();
-						phVertices[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
-						phVertices[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
-						phVertices[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
-						phVertices[VertexIdxCounter].Tangent.W = tanVector.mData[3];
-						phVertices[i].Tangent = phVertices[i].Tangent.Get3DNormalized();
+						defaultVertices[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
+						defaultVertices[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
+						defaultVertices[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
+						defaultVertices[VertexIdxCounter].Tangent.W = tanVector.mData[3];
+						defaultVertices[i].Tangent = defaultVertices[i].Tangent.Get3DNormalized();
 
 						VertexIdxCounter++;
 					}
 				}
-				assert(VertexIdxCounter == NewGeometryAsset->_vertexDataNum);
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
 				break;
 			}
 			break;
@@ -908,9 +1056,9 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 
 			for (uint32 i = 0; i < thisIdxDataNum; i += 3)
 			{
-				SSDefaultVertex& v0 = phVertices[thisIdxData[i]];
-				SSDefaultVertex& v1 = phVertices[thisIdxData[i + 1]];
-				SSDefaultVertex& v2 = phVertices[thisIdxData[i + 2]];
+				SSDefaultVertex& v0 = defaultVertices[thisIdxData[i]];
+				SSDefaultVertex& v1 = defaultVertices[thisIdxData[i + 1]];
+				SSDefaultVertex& v2 = defaultVertices[thisIdxData[i + 2]];
 
 				Vector4f dv1 = v1.Pos - v0.Pos;
 				Vector4f dv2 = v2.Pos - v0.Pos;
@@ -926,7 +1074,679 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 	}
 
 	NewGeometryAsset->_assetPath = _FBXImporter->GetFileName().Buffer();
-	NewGeometryAsset->_assetName = _fileName.GetData();
+	NewGeometryAsset->_assetName = _fileName.C_Str();
+	NewGeometryAsset->_assetName += "_";
+	NewGeometryAsset->_assetName += fbxMesh->GetNode()->GetName();
+	NewGeometryAsset->_assetName += ".geom";
+
+	return NewGeometryAsset;
+}
+
+
+SSGeometryAsset* SSFBXImporter::GenerateSkinnedGeometryFromFbxMesh(FbxMesh* fbxMesh)
+{
+	assert(fbxMesh != nullptr);
+	SSGeometryAsset* NewGeometryAsset = DBG_NEW SSGeometryAsset();
+
+	// 1. Load num
+	const uint32 layerNum = fbxMesh->GetLayerCount();
+	const uint32 ControlPointCnt = fbxMesh->GetControlPointsCount();
+	const uint32 PolygonCount = fbxMesh->GetPolygonCount();
+	const uint32 PolygonVertexCnt = fbxMesh->GetPolygonVertexCount(); // sum of vertex in each polygon
+	const FbxGeometryElementNormal* const FbxNormal = fbxMesh->GetElementNormal();
+	SS_ASSERT(FbxNormal != nullptr, "normal must be exists.");
+
+	uint32 uvChannelCnt = fbxMesh->GetUVLayerCount();
+	FbxGeometryElementUV* fbxUV[2];
+	if (uvChannelCnt > 2)
+	{
+		SS_CLASS_WARNING_LOG("Too many uv channel");
+		uvChannelCnt = 2;
+	}
+	for (uint32 i = 0; i < uvChannelCnt; i++)
+	{
+		fbxUV[i] = fbxMesh->GetElementUV(i);
+		SS_ASSERT(fbxUV[i] != nullptr, "uv must be exists of idx %d", i);
+	}
+
+
+	// * calculate vertex unit
+	NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPoint;
+	if (FbxNormal->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
+		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
+	if (uvChannelCnt > 0 && fbxUV[0]->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
+		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
+	if (uvChannelCnt > 1 && fbxUV[1]->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
+		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
+
+	NewGeometryAsset->_drawTopologyType = EGeometryDrawTopology::TriangleList;
+	NewGeometryAsset->_meshType = EMeshType::Skinned;
+
+	// 2. alloc vertex memory
+	switch (NewGeometryAsset->_vertexUnit) {
+
+	case EVertexUnit::VertexPerPoint:
+		NewGeometryAsset->_vertexCnt = ControlPointCnt; break;
+	case EVertexUnit::VertexPerPolygon:
+		NewGeometryAsset->_vertexCnt = PolygonVertexCnt; break;
+
+	}
+
+
+	NewGeometryAsset->_eachVertexDataSize = sizeof(SSSkinnedVertex);
+	NewGeometryAsset->_vertexData = DBG_MALLOC(NewGeometryAsset->_eachVertexDataSize * NewGeometryAsset->_vertexCnt);
+	SSSkinnedVertex* ssSkinnedVertex = (SSSkinnedVertex*)NewGeometryAsset->_vertexData;
+
+	// 3. alloc index memory
+	if (fbxMesh->GetNode()->GetMaterial(0) != nullptr)
+		NewGeometryAsset->_subGeometryNum = fbxMesh->GetNode()->GetMaterialCount();
+	else
+		NewGeometryAsset->_subGeometryNum = 1;
+	assert(NewGeometryAsset->_subGeometryNum < SUBGEOM_COUNT_MAX);
+	FbxLayerElementArrayTemplate<int>* materialIndices = nullptr;
+
+	if (fbxMesh->GetElementMaterial() != nullptr && fbxMesh->GetElementMaterial()->GetMappingMode() == FbxLayerElement::eByPolygon)
+	{
+		fbxMesh->GetMaterialIndices(&materialIndices);
+
+		for (uint32 i = 0; i < PolygonCount; i++)
+		{
+			uint8 matIdx = materialIndices->GetAt(i);
+			NewGeometryAsset->_indexDataNum[matIdx] += ((fbxMesh->GetPolygonSize(i) - 2) * 3);
+		}
+	}
+	else
+	{
+		for (uint32 i = 0; i < PolygonCount; i++)
+		{
+			NewGeometryAsset->_indexDataNum[0] += (fbxMesh->GetPolygonSize(i) - 2);
+		}
+		NewGeometryAsset->_indexDataNum[0] *= 3;
+	}
+
+	uint32 idxAcc = 0;
+	for (uint32 i = 0; i < NewGeometryAsset->_subGeometryNum; i++)
+	{
+		NewGeometryAsset->_indexDataStartIndex[i] = idxAcc;
+		idxAcc += NewGeometryAsset->_indexDataNum[i];
+	}
+	NewGeometryAsset->_wholeIndexDataNum = idxAcc;
+	NewGeometryAsset->_indexData = (uint32*)DBG_MALLOC(sizeof(uint32) * NewGeometryAsset->_wholeIndexDataNum);
+
+
+
+
+	// 4. Load vertex/Index data
+	FbxVector4* ControlPoints = fbxMesh->GetControlPoints();
+	uint32 CurIndexDataIdx[SUBGEOM_COUNT_MAX] = { 0, };
+	uint32* fbxIdxToMyIdxMap = (uint32*)DBG_MALLOC(sizeof(uint32) * PolygonVertexCnt);
+	// TODO: 이거 더 많아야함. idx 두개 이상 있을 수 있음 ㅇㅇ
+
+	switch (NewGeometryAsset->_vertexUnit) {
+
+	case EVertexUnit::VertexPerPoint:
+	{
+
+		for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+			ssSkinnedVertex[i].Pos.X = -ControlPoints[i].mData[0] * 0.01;
+			ssSkinnedVertex[i].Pos.Y = ControlPoints[i].mData[1] * 0.01;
+			ssSkinnedVertex[i].Pos.Z = ControlPoints[i].mData[2] * 0.01;
+			ssSkinnedVertex[i].Pos.W = ControlPoints[i].mData[3] * 0.01;
+		}
+
+		if (fbxMesh->GetElementMaterial() != nullptr && fbxMesh->GetElementMaterial()->GetMappingMode() == FbxLayerElement::eByPolygon)
+		{
+			for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++)
+			{
+				uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+				uint32 matIdx = materialIndices->GetAt(i);
+				uint32 idxDataStart = NewGeometryAsset->_indexDataStartIndex[matIdx];
+				for (uint32 j = 1; j < thisPolygonSize - 1; j++)
+				{
+					// 내 index buffer													=		내 vertex buffer 위치
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]] = fbxMesh->GetPolygonVertex(i, j + 1);
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 1] = fbxMesh->GetPolygonVertex(i, j);
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 2] = fbxMesh->GetPolygonVertex(i, 0);
+
+
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, j + 1)] = idxDataStart + CurIndexDataIdx[matIdx];
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, j)] = idxDataStart + CurIndexDataIdx[matIdx] + 1;
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, 0)] = idxDataStart + CurIndexDataIdx[matIdx] + 2;
+
+					CurIndexDataIdx[matIdx] += 3;
+				}
+			}
+		}
+		else
+		{
+			for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++)
+			{
+				uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+				for (uint32 j = 1; j < thisPolygonSize - 1; j++)
+				{
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0]] = fbxMesh->GetPolygonVertex(i, j + 1);
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0] + 1] = fbxMesh->GetPolygonVertex(i, j);
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0] + 2] = fbxMesh->GetPolygonVertex(i, 0);
+
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, j + 1)] = CurIndexDataIdx[0];
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, j)] = CurIndexDataIdx[0] + 1;
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertex(i, 0)] = CurIndexDataIdx[0] + 2;
+
+					CurIndexDataIdx[0] += 3;
+				}
+			}
+		}
+
+		for (uint32 i = 0; i < NewGeometryAsset->_subGeometryNum; i++)
+			assert(NewGeometryAsset->_indexDataNum[i] == CurIndexDataIdx[i]);
+	}
+	break;
+	case EVertexUnit::VertexPerPolygon:
+	{
+		int32 VertexIdxCounter = 0;
+		uint32 fbxMeshPolygonCount = fbxMesh->GetPolygonCount();
+
+		for (int32 i = 0; i < fbxMeshPolygonCount; i++) {
+			uint32 thisPolygonVerticesCount = fbxMesh->GetPolygonSize(i);
+			for (int32 j = 0; j < thisPolygonVerticesCount; j++) {
+				int32 ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
+				FbxVector4 vertexPos = fbxMesh->GetControlPointAt(ControlPointIdx);
+				ssSkinnedVertex[VertexIdxCounter].Pos.X = -vertexPos.mData[0] * 0.01;
+				ssSkinnedVertex[VertexIdxCounter].Pos.Y = vertexPos.mData[1] * 0.01;
+				ssSkinnedVertex[VertexIdxCounter].Pos.Z = vertexPos.mData[2] * 0.01;
+				ssSkinnedVertex[VertexIdxCounter].Pos.W = vertexPos.mData[3] * 0.01;
+
+				VertexIdxCounter++;
+			}
+		}
+		assert(VertexIdxCounter == PolygonVertexCnt);
+
+
+		if (fbxMesh->GetElementMaterial() != nullptr && fbxMesh->GetElementMaterial()->GetMappingMode() == FbxLayerElement::eByPolygon)
+		{
+			for (uint32 i = 0; i < PolygonCount; i++)
+			{
+				uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+				uint32 matIdx = materialIndices->GetAt(i);
+				uint32 idxDataStart = NewGeometryAsset->_indexDataStartIndex[matIdx];
+				for (uint32 j = 1; j < thisPolygonSize - 1; j++)
+				{
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx]] = fbxMesh->GetPolygonVertexIndex(i) + j + 1;
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 1] = fbxMesh->GetPolygonVertexIndex(i) + j;
+					NewGeometryAsset->_indexData[idxDataStart + CurIndexDataIdx[matIdx] + 2] = fbxMesh->GetPolygonVertexIndex(i);
+
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i) + j + 1] = idxDataStart + CurIndexDataIdx[matIdx];
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i) + j] = idxDataStart + CurIndexDataIdx[matIdx] + 1;
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i)] = idxDataStart + CurIndexDataIdx[matIdx] + 2;
+
+					CurIndexDataIdx[matIdx] += 3;
+				}
+			}
+		}
+		else
+		{
+			for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++)
+			{
+				uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+				for (uint32 j = 1; j < thisPolygonSize - 1; j++)
+				{
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0]] = fbxMesh->GetPolygonVertexIndex(i) + j + 1;
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0] + 1] = fbxMesh->GetPolygonVertexIndex(i) + j;
+					NewGeometryAsset->_indexData[CurIndexDataIdx[0] + 2] = fbxMesh->GetPolygonVertexIndex(i);
+
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i) + j + 1] = CurIndexDataIdx[0];
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i) + j] = CurIndexDataIdx[0] + 1;
+					fbxIdxToMyIdxMap[fbxMesh->GetPolygonVertexIndex(i)] = CurIndexDataIdx[0] + 2;
+
+					CurIndexDataIdx[0] += 3;
+				}
+			}
+		}
+		for (uint32 i = 0; i < NewGeometryAsset->_subGeometryNum; i++)
+			assert(NewGeometryAsset->_indexDataNum[i] == CurIndexDataIdx[i]);
+	}
+	break;
+	default:
+		free(NewGeometryAsset->_indexData);
+		free(NewGeometryAsset->_vertexData);
+		SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+		return nullptr;
+	}
+
+
+	// 5. Load normal data
+	switch (NewGeometryAsset->_vertexUnit) {
+	case EVertexUnit::VertexPerPoint:
+
+		switch (FbxNormal->GetReferenceMode()) {
+		case FbxLayerElement::eDirect:
+
+			for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+
+				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(i);
+				normalVector.Normalize();
+
+				ssSkinnedVertex[i].Normal.X = -normalVector.mData[0];
+				ssSkinnedVertex[i].Normal.Y = normalVector.mData[1];
+				ssSkinnedVertex[i].Normal.Z = normalVector.mData[2];
+				ssSkinnedVertex[i].Normal.W = normalVector.mData[3];
+				ssSkinnedVertex[i].Normal = ssSkinnedVertex[i].Normal.Get3DNormalized();
+			}
+
+			break;
+		case FbxLayerElement::eIndex:
+			SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+		case FbxLayerElement::eIndexToDirect:
+
+			for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+				int32 FbxNormalIdx = FbxNormal->GetIndexArray().GetAt(i);
+				FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(FbxNormalIdx);
+
+				ssSkinnedVertex[i].Normal.X = -normalVector.mData[0];
+				ssSkinnedVertex[i].Normal.Y = normalVector.mData[1];
+				ssSkinnedVertex[i].Normal.Z = normalVector.mData[2];
+				ssSkinnedVertex[i].Normal.W = normalVector.mData[3];
+				ssSkinnedVertex[i].Normal = ssSkinnedVertex[i].Normal.Get3DNormalized();
+			}
+
+			break;
+		default:
+			free(NewGeometryAsset->_indexData);
+			free(NewGeometryAsset->_vertexData);
+			SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+			return nullptr;
+		}
+
+		break;
+	case EVertexUnit::VertexPerPolygon:
+	{
+		int32 VertexIdxCounter = 0;
+
+		switch (FbxNormal->GetReferenceMode()) {
+		case FbxLayerElement::eDirect:
+
+			for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+				for (uint32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
+
+					int32 ControlPointIdx;
+					if (FbxNormal->GetMappingMode() == FbxLayerElement::eByPolygonVertex) ControlPointIdx = fbxMesh->GetPolygonVertexIndex(i) + j;
+					else ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
+
+					FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(ControlPointIdx);
+					normalVector.Normalize();
+					ssSkinnedVertex[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					ssSkinnedVertex[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					ssSkinnedVertex[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					ssSkinnedVertex[VertexIdxCounter].Normal.W = normalVector.mData[3];
+					ssSkinnedVertex[VertexIdxCounter].Normal = ssSkinnedVertex[VertexIdxCounter].Normal.Get3DNormalized();
+
+					VertexIdxCounter++;
+				}
+			}
+			assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+
+			break;
+		case FbxLayerElement::eIndex:
+			SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+		case FbxLayerElement::eIndexToDirect:
+
+			for (int32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+				for (int32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
+
+					int32 ControlPointIdx;
+					if (FbxNormal->GetMappingMode() == FbxLayerElement::eByPolygonVertex) ControlPointIdx = fbxMesh->GetPolygonVertexIndex(i) + j;
+					else ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
+
+
+					uint32 normalIdx = FbxNormal->GetIndexArray().GetAt(ControlPointIdx);
+					FbxVector4 normalVector = FbxNormal->GetDirectArray().GetAt(normalIdx);
+					normalVector.Normalize();
+
+					ssSkinnedVertex[VertexIdxCounter].Normal.X = -normalVector.mData[0];
+					ssSkinnedVertex[VertexIdxCounter].Normal.Y = normalVector.mData[1];
+					ssSkinnedVertex[VertexIdxCounter].Normal.Z = normalVector.mData[2];
+					ssSkinnedVertex[VertexIdxCounter].Normal.W = normalVector.mData[3];
+					ssSkinnedVertex[VertexIdxCounter].Normal = ssSkinnedVertex[VertexIdxCounter].Normal.Get3DNormalized();
+
+					VertexIdxCounter++;
+				}
+			}
+			assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+			break;
+		default:
+			free(NewGeometryAsset->_indexData);
+			free(NewGeometryAsset->_vertexData);
+			SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+			return nullptr;
+		}
+	}
+	break;
+	default:
+		free(NewGeometryAsset->_indexData);
+		free(NewGeometryAsset->_vertexData);
+		SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+		return nullptr;
+	}
+
+	// 6. Load UV
+	for (uint32 uvIdx = 0; uvIdx < uvChannelCnt; uvIdx++)
+	{
+		int32 VertexIdxCounter = 0;
+		FbxGeometryElementUV* fbxUVItem = fbxMesh->GetElementUV(uvIdx);
+		assert(fbxUVItem != nullptr);
+
+		switch (NewGeometryAsset->_vertexUnit)
+		{
+		case EVertexUnit::VertexPerPoint:
+			switch (fbxUVItem->GetReferenceMode())
+			{
+			case FbxLayerElement::eDirect:
+
+				for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+					FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(i);
+
+					ssSkinnedVertex[i].Uv[uvIdx].X = uvVector.mData[0];
+					ssSkinnedVertex[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+				}
+
+				break;
+			case FbxLayerElement::eIndex:
+				SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+			case FbxLayerElement::eIndexToDirect:
+
+				for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+					int32 FbxUvIdx = fbxUVItem->GetIndexArray().GetAt(i);
+					FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(FbxUvIdx);
+
+					ssSkinnedVertex[i].Uv[uvIdx].X = uvVector.mData[0];
+					ssSkinnedVertex[i].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+				}
+
+				break;
+			default:
+				free(NewGeometryAsset->_indexData);
+				free(NewGeometryAsset->_vertexData);
+				SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+				return nullptr;
+			}
+			break;
+			//=========================================================================================================
+		case EVertexUnit::VertexPerPolygon:
+
+			switch (fbxUVItem->GetReferenceMode())
+			{
+			case FbxLayerElement::eDirect:
+
+				for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+					uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+					for (uint32 j = 0; j < thisPolygonSize; j++) {
+
+						uint32 uvIdx = fbxMesh->GetTextureUVIndex(i, j);
+						FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(uvIdx);
+
+						ssSkinnedVertex[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
+						ssSkinnedVertex[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+
+						VertexIdxCounter++;
+					}
+				}
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+
+				break;
+			case FbxLayerElement::eIndex:
+				SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+			case FbxLayerElement::eIndexToDirect:
+
+				for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+					uint32 thisPolygonSize = fbxMesh->GetPolygonSize(i);
+					for (uint32 j = 0; j < thisPolygonSize; j++) {
+						fbxMesh->GetPolygonVertex(i, j);
+						uint32 polygonVertexIdx = fbxMesh->GetTextureUVIndex(i, j);
+						FbxVector2 uvVector = fbxUVItem->GetDirectArray().GetAt(polygonVertexIdx);
+
+						ssSkinnedVertex[VertexIdxCounter].Uv[uvIdx].X = uvVector.mData[0];
+						ssSkinnedVertex[VertexIdxCounter].Uv[uvIdx].Y = 1 - uvVector.mData[1];
+
+						VertexIdxCounter++;
+					}
+				}
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+
+				break;
+			default:
+				free(NewGeometryAsset->_indexData);
+				free(NewGeometryAsset->_vertexData);
+				SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+				return nullptr;
+			}
+			break;
+		default:
+			free(NewGeometryAsset->_indexData);
+			free(NewGeometryAsset->_vertexData);
+			SS_CLASS_ERR_LOG("Invalid Fbxformat. function just return");
+			return nullptr;
+		}
+	}
+
+	FbxGeometryElementTangent* fbxTangent = fbxMesh->GetElementTangent();
+	uint32 cnt = fbxMesh->GetElementTangentCount();
+	cnt = fbxMesh->GetElementBinormalCount();
+
+	// load tangent
+	if (fbxTangent != nullptr) {
+		uint32 VertexIdxCounter = 0;
+
+		switch (NewGeometryAsset->_vertexUnit)
+		{
+		case EVertexUnit::VertexPerPoint:
+			switch (fbxTangent->GetReferenceMode())
+			{
+			case FbxLayerElement::eDirect:
+				for (uint32 i = 0; i < fbxMesh->GetControlPointsCount(); i++)
+				{
+					FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(i);
+
+					ssSkinnedVertex[i].Tangent.X = tanVector.mData[0];
+					ssSkinnedVertex[i].Tangent.Y = tanVector.mData[1];
+					ssSkinnedVertex[i].Tangent.Z = tanVector.mData[2];
+					ssSkinnedVertex[i].Tangent.W = tanVector.mData[3];
+					ssSkinnedVertex[i].Tangent = ssSkinnedVertex[i].Tangent.Get3DNormalized();
+				}
+				break;
+			case FbxLayerElement::eIndex:
+				SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+			case FbxLayerElement::eIndexToDirect:
+				for (int32 i = 0; i < fbxMesh->GetControlPointsCount(); i++) {
+					int32 tangentIdx = fbxTangent->GetIndexArray().GetAt(i);
+					FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(tangentIdx);
+
+					ssSkinnedVertex[i].Tangent.X = -tanVector.mData[0];
+					ssSkinnedVertex[i].Tangent.Y = tanVector.mData[1];
+					ssSkinnedVertex[i].Tangent.Z = tanVector.mData[2];
+					ssSkinnedVertex[i].Tangent.W = tanVector.mData[3];
+					ssSkinnedVertex[i].Tangent = ssSkinnedVertex[i].Tangent.Get3DNormalized();
+				}
+				break;
+			}
+			break;
+
+		case EVertexUnit::VertexPerPolygon:
+			VertexIdxCounter = 0;
+
+			switch (fbxTangent->GetReferenceMode())
+			{
+			case FbxLayerElement::eDirect:
+
+				for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+					for (uint32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
+						int32 ControlPointIdx;
+						if (fbxTangent->GetMappingMode() == FbxLayerElement::eByPolygonVertex) ControlPointIdx = fbxMesh->GetPolygonVertexIndex(i) + j;
+						else ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
+
+						FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(ControlPointIdx);
+						tanVector.Normalize();
+						ssSkinnedVertex[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.W = tanVector.mData[3];
+						ssSkinnedVertex[i].Tangent = ssSkinnedVertex[i].Tangent.Get3DNormalized();
+
+						VertexIdxCounter++;
+					}
+				}
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+				break;
+
+			case FbxLayerElement::eIndex:
+				SS_CLASS_WARNING_LOG("\"FbxLayerElement::EReferenceMode::eIndex\" is Legacy. Use \"eIndexToDirect\".");
+			case FbxLayerElement::eIndexToDirect:
+				for (uint32 i = 0; i < fbxMesh->GetPolygonCount(); i++) {
+					for (uint32 j = 0; j < fbxMesh->GetPolygonSize(i); j++) {
+						uint32 ControlPointIdx;
+						if (fbxTangent->GetMappingMode() == FbxLayerElement::eByPolygonVertex) ControlPointIdx = fbxMesh->GetPolygonVertexIndex(i) + j;
+						else ControlPointIdx = fbxMesh->GetPolygonVertex(i, j);
+
+						uint32 tangentIdx = fbxTangent->GetIndexArray().GetAt(ControlPointIdx);
+						FbxVector4 tanVector = fbxTangent->GetDirectArray().GetAt(tangentIdx);
+						tanVector.Normalize();
+						ssSkinnedVertex[VertexIdxCounter].Tangent.X = -tanVector.mData[0];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.Y = tanVector.mData[1];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.Z = tanVector.mData[2];
+						ssSkinnedVertex[VertexIdxCounter].Tangent.W = tanVector.mData[3];
+						ssSkinnedVertex[i].Tangent = ssSkinnedVertex[i].Tangent.Get3DNormalized();
+
+						VertexIdxCounter++;
+					}
+				}
+				assert(VertexIdxCounter == NewGeometryAsset->_vertexCnt);
+				break;
+			}
+			break;
+		}
+	}
+	else
+	{
+		for (uint32 subGeomIdx = 0; subGeomIdx < NewGeometryAsset->_subGeometryNum; subGeomIdx++)
+		{
+			uint32* thisIdxData = NewGeometryAsset->_indexData + NewGeometryAsset->_indexDataStartIndex[subGeomIdx];
+			uint32 thisIdxDataNum = NewGeometryAsset->_indexDataNum[subGeomIdx];
+			assert(thisIdxDataNum % 3 == 0);
+
+			for (uint32 i = 0; i < thisIdxDataNum; i += 3)
+			{
+				SSDefaultVertex& v0 = ssSkinnedVertex[thisIdxData[i]];
+				SSDefaultVertex& v1 = ssSkinnedVertex[thisIdxData[i + 1]];
+				SSDefaultVertex& v2 = ssSkinnedVertex[thisIdxData[i + 2]];
+
+				Vector4f dv1 = v1.Pos - v0.Pos;
+				Vector4f dv2 = v2.Pos - v0.Pos;
+
+				Vector2f duv1 = v1.Uv[0] - v0.Uv[0];
+				Vector2f duv2 = v2.Uv[0] - v0.Uv[0];
+
+				float detInverse = 1.0f / (duv1.X * duv2.Y - duv1.Y * duv2.X);
+				Vector4f tangent = (dv1 * duv2.Y - dv2 * duv1.Y) * detInverse;
+				v2.Tangent = v1.Tangent = v0.Tangent = tangent;
+			}
+		}
+	}
+
+	
+	// load skinning data
+	for (uint32 i = 0; i < NewGeometryAsset->_vertexCnt; i++)
+	{
+		ssSkinnedVertex[i].BoneIdx[0] = SS_UINT32_MAX;
+		ssSkinnedVertex[i].BoneIdx[1] = SS_UINT32_MAX;
+		ssSkinnedVertex[i].BoneIdx[2] = SS_UINT32_MAX;
+		ssSkinnedVertex[i].BoneIdx[3] = SS_UINT32_MAX;
+		ssSkinnedVertex[i].Weight[0] = 0;
+		ssSkinnedVertex[i].Weight[1] = 0;
+		ssSkinnedVertex[i].Weight[2] = 0;
+		ssSkinnedVertex[i].Weight[3] = 0;
+	}
+
+	uint32 deformerCnt = fbxMesh->GetDeformerCount();
+	assert(deformerCnt == 1);
+
+	FbxSkin* fbxSkin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(0, FbxDeformer::eSkin));
+	assert(fbxSkin != nullptr);
+	uint32 clusterCnt = fbxSkin->GetClusterCount();
+
+	SS::FixedStringA<ASSET_NAME_LEN_MAX> skeletonName = _fileName;
+	skeletonName += ".skl";
+	SSSkeletonAsset* skeleton = SSSkeletonAssetManager::FindAssetWithName(skeletonName);
+	assert(skeleton != nullptr);
+	NewGeometryAsset->boundSkeletonAsset = skeleton;
+
+	uint32 ssidxMax = 0;
+	uint32 clusterIdxMax = 0;
+	uint32* boneCntArr = (uint32*)DBG_MALLOC(sizeof(uint32) * NewGeometryAsset->_vertexCnt);
+	for (uint32 i = 0; i < NewGeometryAsset->_vertexCnt; i++) boneCntArr[i] = 0;
+
+	for (uint32 i = 0; i < clusterCnt; i++)
+	{
+		FbxCluster* curCluster = fbxSkin->GetCluster(i);
+		int32 jointIdx = FindBoneIdxWithNameFromSkeleton(skeleton, curCluster->GetLink()->GetName());
+
+		if (jointIdx == -1)
+		{
+			SS_CLASS_ERR_LOG("Skinned mesh doesn't match with skeleton.");
+		}
+
+		uint32 clusterIndicesCnt = curCluster->GetControlPointIndicesCount();
+		int* fbxIndices = curCluster->GetControlPointIndices();
+		double* fbxWeights = curCluster->GetControlPointWeights();
+
+		for (uint32 j = 0; j < clusterIndicesCnt; j++)
+		{
+			if (clusterIdxMax < fbxIndices[j]) clusterIdxMax = fbxIndices[j];
+//			uint32 ssIdx = fbxIdxToMyIdxMap[fbxIndices[j]];
+			constexpr float SKIN_WEIGHT_THRESHOLD = 0.03;
+			if (fbxWeights[j] <= SKIN_WEIGHT_THRESHOLD)
+			{
+				if(boneCntArr[fbxIndices[j]] > 0)
+				{
+					ssSkinnedVertex[fbxIndices[j]].Weight[boneCntArr[fbxIndices[j]] - 1] += fbxWeights[j];
+				}
+				continue;
+			}
+			ssSkinnedVertex[fbxIndices[j]].BoneIdx[boneCntArr[fbxIndices[j]]] = jointIdx;
+			ssSkinnedVertex[fbxIndices[j]].Weight[boneCntArr[fbxIndices[j]]] += fbxWeights[j];
+			boneCntArr[fbxIndices[j]]++;
+
+			if (fbxIndices[j] > ssidxMax) ssidxMax = fbxIndices[j];
+		}
+
+	}
+	
+
+	for (uint32 i = 0; i < NewGeometryAsset->_vertexCnt; i++)
+	{
+		if (boneCntArr[i] > 4)
+		{
+			SS_CLASS_ERR_LOG("There are too many bone idx on one vertex");
+		}
+	}
+
+	for (uint32 i = 0; i < NewGeometryAsset->_vertexCnt; i++)
+	{
+		float* weights = ssSkinnedVertex->Weight;
+		float sum = weights[0] + weights[1] + weights[2] + weights[3];
+		if ( sum < 0.999f)
+		{
+			SS_CLASS_ERR_LOG("sum of weight is not enough");
+		}
+	}
+	
+	free(boneCntArr);
+	boneCntArr = nullptr;
+
+	free(fbxIdxToMyIdxMap);
+	fbxIdxToMyIdxMap = nullptr;
+
+
+	NewGeometryAsset->_assetPath = _FBXImporter->GetFileName().Buffer();
+	NewGeometryAsset->_assetName = _fileName.C_Str();
 	NewGeometryAsset->_assetName += "_";
 	NewGeometryAsset->_assetName += fbxMesh->GetNode()->GetName();
 	NewGeometryAsset->_assetName += ".geom";

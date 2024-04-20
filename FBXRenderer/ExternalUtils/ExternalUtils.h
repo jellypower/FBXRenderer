@@ -6,7 +6,7 @@
 
 namespace ExternalUtils
 {
-	__forceinline static HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+	FORCEINLINE static HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut, D3D_SHADER_MACRO* macros)
     {
         HRESULT hr = S_OK;
 
@@ -23,7 +23,8 @@ namespace ExternalUtils
 #endif
 
         ID3DBlob* pErrorBlob = nullptr;
-        hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+        hr = D3DCompileFromFile(szFileName, macros,
+            D3D_COMPILE_STANDARD_FILE_INCLUDE, szEntryPoint, szShaderModel,
             dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
         if (FAILED(hr))
         {

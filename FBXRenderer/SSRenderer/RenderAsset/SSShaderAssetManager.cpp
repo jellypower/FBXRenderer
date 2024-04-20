@@ -46,7 +46,8 @@ void SSShaderAssetManager::InsertNewShaderAsset(SSShaderAsset* newShader)
 
 void SSShaderAssetManager::LoadNewShaderTemp()
 {
-	InsertNewShaderAsset(DBG_NEW SSShaderAsset("SSDefaultPbr", L"Resource/Shader/SSDefaultPbr.fxh", "VS", "PS", "vs_4_0"));
+	InsertNewShaderAsset(DBG_NEW SSShaderAsset(SSDefaultPbrShaderName, L"Resource/Shader/SSDefaultPbr.fxh", "VS", "PS", "vs_4_0"));
+	InsertNewShaderAsset(DBG_NEW SSShaderAsset(SSDefaultPbrSkinnedShaderName, L"Resource/Shader/SSDefaultPbr.fxh", "VS", "PS", "vs_4_0", 1, "ENABLE_SKINNING"));
 }
 
 HRESULT SSShaderAssetManager::CompileAllShader()
