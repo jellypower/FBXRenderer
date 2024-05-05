@@ -50,7 +50,7 @@ enum EFbxType
 	eFbxTime,				//!< Time value.
 	eFbxReference,			//!< Reference to object or property.
 	eFbxBlob,				//!< Binary data block type.
-	eFbxDistance,			//!< Distance.
+	eFbxDistance,			//!< SqrDistance.
 	eFbxDateTime,			//!< Date and time.
 	eFbxTypeCount	= 24	//!< Indicates the number of type identifiers constants.
 };

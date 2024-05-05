@@ -2085,8 +2085,8 @@ struct ImGuiIO
     // Inputs Behaviors
     // (other variables, ones which are expected to be tweaked within UI code, are exposed in ImGuiStyle)
     float       MouseDoubleClickTime;           // = 0.30f          // Time for a double-click, in seconds.
-    float       MouseDoubleClickMaxDist;        // = 6.0f           // Distance threshold to stay in to validate a double-click, in pixels.
-    float       MouseDragThreshold;             // = 6.0f           // Distance threshold before considering we are dragging.
+    float       MouseDoubleClickMaxDist;        // = 6.0f           // SqrDistance threshold to stay in to validate a double-click, in pixels.
+    float       MouseDragThreshold;             // = 6.0f           // SqrDistance threshold before considering we are dragging.
     float       KeyRepeatDelay;                 // = 0.275f         // When holding a key/button, time before it starts repeating, in seconds (for buttons in Repeat mode, etc.).
     float       KeyRepeatRate;                  // = 0.050f         // When holding a key/button, rate at which it repeats, in seconds.
 
@@ -2884,7 +2884,7 @@ struct ImFontGlyph
     unsigned int    Colored : 1;        // Flag to indicate glyph is colored and should generally ignore tinting (make it usable with no shift on little-endian as this is used in loops)
     unsigned int    Visible : 1;        // Flag to indicate glyph has no visible pixels (e.g. space). Allow early out when rendering.
     unsigned int    Codepoint : 30;     // 0x0000..0x10FFFF
-    float           AdvanceX;           // Distance to next character (= data from font + ImFontConfig::GlyphExtraSpacing.x baked in)
+    float           AdvanceX;           // SqrDistance to next character (= data from font + ImFontConfig::GlyphExtraSpacing.x baked in)
     float           X0, Y0, X1, Y1;     // Glyph corners
     float           U0, V0, U1, V1;     // Texture coordinates
 };

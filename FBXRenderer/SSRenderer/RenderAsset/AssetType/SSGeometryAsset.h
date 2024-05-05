@@ -54,9 +54,9 @@ class SSGeometryAsset : public SSAssetBase
 {
 	friend class SSFBXImporter;
 private:
-	EGeometryDrawTopology _drawTopologyType = EGeometryDrawTopology::None;
+	EGeometryDrawTopology _drawTopologyType = EGeometryDrawTopology::None; // 없애기
 	EMeshType _meshType = EMeshType::None;
-	EVertexUnit _vertexUnit = EVertexUnit::None;
+	EVertexUnit _vertexUnit = EVertexUnit::None; // 없애기
 
 	void* _vertexData = nullptr;
 	uint32 _eachVertexDataSize = 0;

@@ -2172,7 +2172,7 @@ struct ImGuiContext
     bool                    DragCurrentAccumDirty;
     float                   DragCurrentAccum;                   // Accumulator for dragging modification. Always high-precision, not rounded by end-user precision settings
     float                   DragSpeedDefaultRatio;              // If speed == 0.0f, uses (max-min) * DragSpeedDefaultRatio
-    float                   ScrollbarClickDeltaToGrabCenter;    // Distance between mouse and center of grab box, normalized in parent space. Use storage?
+    float                   ScrollbarClickDeltaToGrabCenter;    // SqrDistance between mouse and center of grab box, normalized in parent space. Use storage?
     float                   DisabledAlphaBackup;                // Backup for style.Alpha for BeginDisabled()
     short                   DisabledStackSize;
     short                   LockMarkEdited;

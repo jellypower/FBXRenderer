@@ -28,13 +28,13 @@ void SSSkeletonAnimAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11Dev
 {
 	HRESULT hr;
 	D3D11_BUFFER_DESC desc;
-	desc.ByteWidth = sizeof(XMMATRIX) * _skeleton->GetBones().GetSize();
+	desc.ByteWidth = sizeof(JOINTMATRIX) * _skeleton->GetBones().GetSize();
 	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	desc.StructureByteStride = sizeof(XMMATRIX);
+	desc.StructureByteStride = sizeof(JOINTMATRIX);
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	desc.Usage = D3D11_USAGE_DYNAMIC;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	
+
 	hr = InDevice->CreateBuffer(&desc, nullptr, &_jointBuffer);
 	if (FAILED(hr))
 	{
@@ -57,20 +57,33 @@ void SSSkeletonAnimAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11Dev
 	}
 }
 
+static void UpdateJointBufferRecursive(JOINTMATRIX* joints, const SS::PooledList<BoneNode>& bones,
+	const Transform* transformList, Transform parentTransform, uint32 idx)
+{
+	Transform thisTransform = transformList[idx] * parentTransform;
+
+	joints[idx].PosMatrix = XMMatrixTranspose(thisTransform.AsMatrix());
+	joints[idx].RotMatrix = XMMatrixTranspose(thisTransform.Rotation.AsMatrix());
+
+	for (uint32 childIdx : bones[idx]._childs)
+	{
+		UpdateJointBufferRecursive(joints, bones, transformList, thisTransform, childIdx);
+	}
+}
+
 void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDeviceContext, uint32 curFrameIdx)
 {
 	D3D11_MAPPED_SUBRESOURCE dataPtr;
 	HRESULT hr = InDeviceContext->Map(_jointBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &dataPtr);
 	if (SUCCEEDED(hr))
 	{
-		XMMATRIX* joints = (XMMATRIX*)dataPtr.pData;
-		
+		JOINTMATRIX* const joints = (JOINTMATRIX*)dataPtr.pData;
+
 		uint32 boneCnt = _skeleton->GetBones().GetSize();
 
-		for (uint32 i = 0; i < boneCnt; i++)
-		{
-			joints[i] = _animStack[i + (boneCnt * curFrameIdx)].AsMatrix();
-		}
+		UpdateJointBufferRecursive(joints, _skeleton->GetBones(), _animStack.GetData() + (boneCnt * curFrameIdx), Transform::Identity, 0);		
+
+
 		InDeviceContext->Unmap(_jointBuffer, 0);
 	}
 	else
@@ -80,7 +93,43 @@ void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDevic
 	}
 }
 
+
+static void ResetJointBufferRecursive(JOINTMATRIX* joints, const SS::PooledList<BoneNode>& bones, Transform parentTransform, uint32 idx)
+{
+	Transform thisTransform =  bones[idx]._transform * parentTransform;
+
+	joints[idx].PosMatrix = XMMatrixTranspose(thisTransform.AsMatrix());
+	joints[idx].RotMatrix = XMMatrixTranspose(thisTransform.Rotation.AsMatrix());
+	
+	for (uint32 childIdx : bones[idx]._childs)
+	{
+		ResetJointBufferRecursive(joints, bones, thisTransform, childIdx);
+	}
+}
+
+
+void SSSkeletonAnimAsset::ResetJointBufferState(ID3D11DeviceContext* InDeviceContext)
+{
+	D3D11_MAPPED_SUBRESOURCE dataPtr;
+	HRESULT hr = InDeviceContext->Map(_jointBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &dataPtr);
+
+	if (SUCCEEDED(hr))
+	{
+		JOINTMATRIX* joints = (JOINTMATRIX*)dataPtr.pData;
+
+		ResetJointBufferRecursive(joints, _skeleton->GetBones(), Transform::Identity, 0);
+
+		InDeviceContext->Unmap(_jointBuffer, 0);
+	}
+	else
+	{
+		SS_CLASS_ERR_LOG("Buffer update failed.");
+		return;
+	}
+
+}
+
 void SSSkeletonAnimAsset::SetAnimStackTransform(uint32 skeletonIdx, uint32 frameIdx, const Transform& InTransform)
 {
-	_animStack[_frameCnt * frameIdx + skeletonIdx] = InTransform;
+	_animStack[_skeleton->GetBones().GetSize() * frameIdx + skeletonIdx] = InTransform;
 }

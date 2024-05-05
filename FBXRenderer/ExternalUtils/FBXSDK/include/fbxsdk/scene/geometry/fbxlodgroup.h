@@ -122,7 +122,7 @@ public:
 	FbxPropertyT<FbxBool>  ThresholdsUsedAsPercentage;
 
 	/**
-	  * \name Distance Mode
+	  * \name SqrDistance Mode
 	  * The properties in this block are meaningful only if ThresholdsUsedAsPercentage
 	  * is set to false and should be ignored otherwise.
 	  */

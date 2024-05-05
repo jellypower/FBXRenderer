@@ -233,7 +233,7 @@ public:
 		FbxQuaternion Product(const FbxQuaternion& pOther) const;
 
 		/** Return quaternion dot product.
-		  * \param pQuaternion     Dot product quaternion.
+		  * \param pQuaternion     Dot3D product quaternion.
 		  * \return                The dot product of this quaternion and pQuaternion.
 		  */
 		double DotProduct(const FbxQuaternion& pQuaternion) const;

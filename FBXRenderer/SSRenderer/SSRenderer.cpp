@@ -494,13 +494,15 @@ void SSRenderer::BindModel(const SSModelAsset* modelToBind, uint8 multiMaterialI
 
 void SSRenderer::BindSkeleton(SSSkeletonAsset* skeletonToBind)
 {
-	_deviceContext->VSSetShaderResources(2, 1, skeletonToBind->GetJointBufferSRVPtr());
+	_deviceContext->VSSetShaderResources(3, 1, skeletonToBind->GetJointBufferSRVPtr());
 }
 
 void SSRenderer::BindSkeletonAnim(SSSkeletonAnimAsset* skeletonAnimAsset, float time)
 {
-	skeletonAnimAsset->UpdateGPUBufferFrameState(_deviceContext, (uint32)time);
-	_deviceContext->VSSetShaderResources(3, 1, skeletonAnimAsset->GetJointBufferSRVPtr());
+	uint32 frame = (uint32)(SSFrameInfo::GetElapsedTime() * 24) % 55;
+	skeletonAnimAsset->UpdateGPUBufferFrameState(_deviceContext, frame);
+//	skeletonAnimAsset->ResetJointBufferState(_deviceContext);
+	_deviceContext->VSSetShaderResources(4, 1, skeletonAnimAsset->GetJointBufferSRVPtr());
 }
 
 
@@ -861,9 +863,14 @@ void SSRenderer::PerFrame()
 
 	Transform drawTransform;
 
+	uint32 frame = (uint32)(SSFrameInfo::GetElapsedTime() * 24) % 55;
+
+	if (_skeletonAssetCache) {
+		DrawAnimatedSkeletonRecursion(_skeletonAssetCache->GetBones(), _skeletonAnimCache->GetAnimStack().GetData() + 88 * frame, 0, drawTransform);
+	}
+
 
 	TraverseModelCombinationAndDraw(_mdlcCache, drawTransform.AsMatrix(), drawTransform.Rotation.AsMatrix());
-//	TraverseSkeletonAndDrawRecursion(_skeletonAssetCache->GetBones(), 0, drawTransform.AsMatrix(), drawTransform.AsInverseMatrix(),drawTransform.Rotation.AsMatrix());
 
 	{
 		ImGui::Render();
@@ -886,7 +893,7 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 			if (modelAsset->GetGeometry()->GetMeshType() == EMeshType::Skinned)
 			{
 				BindSkeleton(_skeletonAssetCache);
-				BindSkeletonAnim(_skeletonAnimCache, 40);
+				BindSkeletonAnim(_skeletonAnimCache, 20);
 			}
 
 			const uint32 idxStart = modelAsset->GetGeometry()->GetIndexDataStartIndex(i);
@@ -909,7 +916,7 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 
 }
 
-void SSRenderer::TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX inverseMatrix, XMMATRIX rotMatrix)
+void SSRenderer::TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX rotMatrix)
 {
 	BindModel(_directionMeshCache);
 	_directionMeshCache->GetMaterial()->UpdateGlobalRenderParam(_deviceContext, _globalParamContext);
@@ -917,14 +924,10 @@ void SSRenderer::TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>
 	_directionMeshCache->GetMaterial()->UpdateTransform(_deviceContext, transformMatrix, rotMatrix);
 	_deviceContext->DrawIndexed(_directionMeshCache->GetGeometry()->GetIndexDataNum(), _directionMeshCache->GetGeometry()->GetIndexDataStartIndex(), 0);
 
-
-	XMMATRIX ret = inverseMatrix * transformMatrix;
-
 	for (const uint16 childIdx : boneList[boneIdx]._childs)
 	{
 		TraverseSkeletonAndDrawRecursion(boneList, childIdx,
 			boneList[childIdx]._transform.AsMatrix() * transformMatrix,
-			inverseMatrix * boneList[childIdx]._transform.AsInverseMatrix(),
 			boneList[childIdx]._transform.Rotation.AsMatrix() * rotMatrix);
 	}
 }
@@ -934,4 +937,25 @@ void SSRenderer::DrawAnimatedSkeleton()
 
 }
 
+void SSRenderer::DrawAnimatedSkeletonRecursion(const SS::PooledList<BoneNode>& boneList, const Transform* animTransform, const uint16 boneIdx, Transform transform)
+{
+	BindModel(_directionMeshCache);
+	_directionMeshCache->GetMaterial()->UpdateGlobalRenderParam(_deviceContext, _globalParamContext);
 
+	Transform currentTransform = animTransform[boneIdx] * transform;
+	_directionMeshCache->GetMaterial()->UpdateTransform(_deviceContext, currentTransform.AsMatrix(), currentTransform.Rotation.AsMatrix());
+	_deviceContext->DrawIndexed(_directionMeshCache->GetGeometry()->GetIndexDataNum(), _directionMeshCache->GetGeometry()->GetIndexDataStartIndex(), 0);
+
+
+	for (const uint16 childIdx : boneList[boneIdx]._childs)
+	{
+		DrawAnimatedSkeletonRecursion(boneList, animTransform, childIdx,
+			currentTransform);
+	}
+}
+
+
+
+
+
+// TODO: StructureBuffer에 Transpose해서 값 안넣어줌, 재귀함수 잘못적음

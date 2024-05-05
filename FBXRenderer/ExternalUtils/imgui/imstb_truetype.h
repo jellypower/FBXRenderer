@@ -945,7 +945,7 @@ STBTT_DEF void stbtt_Rasterize(stbtt__bitmap *result,        // 1-channel bitmap
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// Signed Distance Function (or Field) rendering
+// Signed SqrDistance Function (or Field) rendering
 
 STBTT_DEF void stbtt_FreeSDF(unsigned char *bitmap, void *userdata);
 // frees the SDF bitmap allocated below

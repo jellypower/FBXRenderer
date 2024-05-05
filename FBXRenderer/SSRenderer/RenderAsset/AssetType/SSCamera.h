@@ -91,7 +91,7 @@ inline void SSCamera::SetFOVWithRadians(float InRadians)
 
 inline void SSCamera::SetFOVWithDegrees(float InDegrees)
 {
-	FOVRadY = SSStaticMath::DegToRadians(InDegrees);
+	FOVRadY = SS::DegToRadians(InDegrees);
 }
 
 inline float SSCamera::GetRadianFOV()
@@ -101,7 +101,7 @@ inline float SSCamera::GetRadianFOV()
 
 inline float SSCamera::GetDegFOV()
 {
-	return SSStaticMath::RadToDegrees(FOVRadY);
+	return SS::RadToDegrees(FOVRadY);
 }
 
 inline void SSCamera::SetNearZ(float InValue)

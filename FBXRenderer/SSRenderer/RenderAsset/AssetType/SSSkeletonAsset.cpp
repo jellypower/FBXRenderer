@@ -9,9 +9,18 @@ BoneNode::BoneNode(const char* boneName, uint16 parentIdx, uint16 childCnt) :
 BoneNode::BoneNode(BoneNode&& boneNode) :
 	_boneName(boneNode._boneName),
 	_parent(boneNode._parent),
-	_childs(SS::move(boneNode._childs))
+	_childs(SS::move(boneNode._childs)),
+	_transform(boneNode._transform)
 {
 
+}
+
+BoneNode::BoneNode(const BoneNode& boneNode) :
+	_boneName(boneNode._boneName),
+	_parent(boneNode._parent),
+	_childs(boneNode._childs),
+	_transform(boneNode._transform)
+{
 }
 
 
@@ -21,13 +30,26 @@ SSSkeletonAsset::SSSkeletonAsset(const char* InAssetName, uint16 boneCount) :
 	_assetName = InAssetName;
 }
 
+static void ResetJointBufferRecursive(JOINTMATRIX* joints, const SS::PooledList<BoneNode>& bones, Transform parentTransform, uint32 idx)
+{
+	Transform thisTransform = bones[idx]._transform * parentTransform;
+	
+	joints[idx].PosMatrix = XMMatrixTranspose(thisTransform.AsInverseMatrix());
+	joints[idx].RotMatrix = XMMatrixTranspose(thisTransform.Rotation.AsInverseMatrix());
+	
+	for (uint32 childIdx : bones[idx]._childs)
+	{
+		ResetJointBufferRecursive(joints, bones, thisTransform, childIdx);
+	}
+}
+
 void SSSkeletonAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext)
 {
 	HRESULT hr;
 	D3D11_BUFFER_DESC desc;
-	desc.ByteWidth = sizeof(XMMATRIX) * _boneList.GetSize();
+	desc.ByteWidth = sizeof(JOINTMATRIX) * _boneList.GetSize();
 	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	desc.StructureByteStride = sizeof(XMMATRIX);
+	desc.StructureByteStride = sizeof(JOINTMATRIX);
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	desc.Usage = D3D11_USAGE_DYNAMIC;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -43,12 +65,9 @@ void SSSkeletonAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceC
 	hr = InDeviceContext->Map(_jointBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &dataPtr);
 	if(SUCCEEDED(hr))
 	{
-		XMMATRIX* joints = (XMMATRIX*)dataPtr.pData;
+		JOINTMATRIX* joints = (JOINTMATRIX*)dataPtr.pData;
 
-		for (uint32 i = 0; i < _boneList.GetSize(); i++)
-		{
-			joints[i]= _boneList[i]._transform.AsInverseMatrix();
-		}
+		ResetJointBufferRecursive(joints, _boneList, Transform::Identity, 0);
 
 		InDeviceContext->Unmap(_jointBuffer, 0);
 	}
@@ -70,8 +89,6 @@ void SSSkeletonAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceC
 		SS_CLASS_ERR_LOG("SRV creation failed.");
 		return;
 	}
-
-
 }
 
 void SSSkeletonAsset::ReleaseGPUBuffer()

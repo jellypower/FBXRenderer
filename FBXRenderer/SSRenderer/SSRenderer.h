@@ -93,7 +93,8 @@ private:
 	void BindSkeletonAnim(class SSSkeletonAnimAsset* skeletonAnimAsset, float time);
 
 	void TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
-	void TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX inverseMatrix, XMMATRIX rotMatrix);
+	void TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
 	void DrawAnimatedSkeleton();
+	void DrawAnimatedSkeletonRecursion(const SS::PooledList<BoneNode>& boneList, const Transform* animTransform, const uint16 boneIdx, Transform transform);
 	
 };

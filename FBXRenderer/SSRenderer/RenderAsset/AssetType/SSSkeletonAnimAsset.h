@@ -27,8 +27,12 @@ public:
 	SSSkeletonAnimAsset(const char* assetName, SSSkeletonAsset* InSkeletonAsset, const uint32 InframeCnt);
 
 public:
+	FORCEINLINE const SS::PooledList<Transform>& GetAnimStack() const { return _animStack; }
+
+
 	void InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext);
 	void UpdateGPUBufferFrameState(ID3D11DeviceContext* InDeviceContext, uint32 curFrameIdx);
+	void ResetJointBufferState(ID3D11DeviceContext* InDeviceContext);
 	FORCEINLINE ID3D11Buffer* const* GetJointBufferPtr() const { return &_jointBuffer; }
 	FORCEINLINE ID3D11ShaderResourceView* const* GetJointBufferSRVPtr() const { return &_jointBufferSRV; }
 private:

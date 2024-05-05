@@ -3,8 +3,9 @@
 #ifdef _WINDOWS
 #include <DirectXMath.h>
 #include "SSNativeKeywords.h"
-
 using namespace DirectX;
+
+struct Quaternion;
 
 struct Vector4f {
 	union {
@@ -22,9 +23,10 @@ struct Vector4f {
 	Vector4f();
 	Vector4f(XMVECTOR InXMVECTOR);
 	Vector4f(float InX, float InY, float InZ, float InW);
-	FORCEINLINE Vector4f Get3DNormalized();
-	FORCEINLINE float Get3DLength();
-	FORCEINLINE float Get3DSqrLength();
+	FORCEINLINE Vector4f Get3DNormalized() const;
+	FORCEINLINE float Get3DLength() const;
+	FORCEINLINE float Get3DSqrLength() const;
+	FORCEINLINE Vector4f Rotate(Quaternion Rotation) const;
 
 	static const Vector4f Forward;
 	static const Vector4f Back;
@@ -65,20 +67,21 @@ FORCEINLINE Vector4f operator-(const Vector4f& inVal) {
 	return -inVal.SimdVec;
 }
 
-FORCEINLINE Vector4f Vector4f::Get3DNormalized()
+FORCEINLINE Vector4f Vector4f::Get3DNormalized() const
 {
 	return SimdVec / Get3DLength();
 }
 
-FORCEINLINE float Vector4f::Get3DLength()
+FORCEINLINE float Vector4f::Get3DLength() const
 {
 	return sqrt(Get3DSqrLength());
 }
 
-FORCEINLINE float Vector4f::Get3DSqrLength()
+FORCEINLINE float Vector4f::Get3DSqrLength() const
 {
 	return XMVector3LengthSq(SimdVec).m128_f32[0];
 }
+
 
 
 
@@ -91,6 +94,7 @@ struct Vector2f {
 
 	Vector2f();
 	Vector2f(float InX, float InY);
+	float GetSqrLength() const;
 
 	static const Vector2f Zero;
 	static const Vector2f One;
@@ -116,6 +120,10 @@ struct Quaternion {
 	Quaternion();
 	Quaternion(__m128 InSimdVector);
 	FORCEINLINE XMMATRIX AsMatrix() const { return XMMatrixRotationQuaternion(SimdVec); }
+	FORCEINLINE XMMATRIX AsInverseMatrix() const { return XMMatrixRotationQuaternion(XMQuaternionInverse(SimdVec)); }
+	FORCEINLINE Quaternion operator*(Quaternion lhs) const { return Quaternion(XMQuaternionMultiply(SimdVec, lhs.SimdVec)); }
+
+	Quaternion Inverse() const;
 
 	static Quaternion FromEulerRotation(Vector4f eulerRotation);
 	static Quaternion FromLookDirect(Vector4f lookDirection, Vector4f upDirection = Vector4f::Up);
@@ -164,16 +172,13 @@ struct Transform {
 	Transform(Vector4f InPos, Quaternion InRot, Vector4f InScale);
 
 
-	FORCEINLINE XMMATRIX AsMatrix() const {
-		return
-			XMMatrixAffineTransformation(
-				Scale.SimdVec,		// 스케일
-				{ 0 },	// 피벗
-				Rotation.SimdVec,	// 회전
-				Position.SimdVec	// 위치
-			);
-	}
+	XMMATRIX AsMatrix() const;
 	XMMATRIX AsInverseMatrix() const;
+
+	Transform Inverse() const; 
+	Transform operator*(const Transform& other) const;
+
+	static const Transform Identity;
 
 	FORCEINLINE Vector4f GetForward() const
 	{

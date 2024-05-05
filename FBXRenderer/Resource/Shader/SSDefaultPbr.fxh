@@ -34,19 +34,34 @@ cbuffer MaterialParam : register(b2)
 
 
 #ifdef ENABLE_SKINNING
-StructuredBuffer<float4x4> SkeletonJointInverse : register(t3);
-StructuredBuffer<float4x4> CurrentJoint : register(t4);
+struct Joint
+{
+    float4x4 PosMatrix;
+    float4x4 RotMatrix; // Inverse-transpose of PosMatrix
+};
+
+
+StructuredBuffer<Joint> SkeletonJointInverse : register(t3);
+StructuredBuffer<Joint> CurrentJoint : register(t4);
 #endif
 
 //--------------------------------------------------------------------------------------
 
 
-const static matrix IDENTITY_MATRIX =
+const static float4x4 IDENTITY_MATRIX =
 {
     { 1, 0, 0, 0 },
     { 0, 1, 0, 0 },
     { 0, 0, 1, 0 },
     { 0, 0, 0, 1 }
+};
+
+const static float4x4 ZERO_MATRIX =
+{
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0 },
+    { 0, 0, 0, 0 }
 };
 
 const static int INT_MAX = 2147483647;
@@ -85,34 +100,35 @@ PS_INPUT VS(VS_INPUT input)
 
 #ifdef ENABLE_SKINNING
     
-    matrix inverseBoneMatrix = IDENTITY_MATRIX;
-    for (int i = 0; i < 4; i++)
+    int i = 0;
+    
+    float4 PosAcc = float4(0,0,0,0);
+    for (i = 0; i < 4; i++)
     {
         if (input.jointIndices[i] == INVALID_IDX)
         {
-            continue;
+            break;
         }
-        inverseBoneMatrix = mul(mul(inverseBoneMatrix, SkeletonJointInverse[input.jointIndices[i]]), input.jointWeights[i]);
+        float4 PosItem = mul(input.Pos, SkeletonJointInverse[input.jointIndices[i]].PosMatrix);
+        PosItem = mul(PosItem, CurrentJoint[input.jointIndices[i]].PosMatrix);
+        PosAcc += (input.jointWeights[i] * PosItem);
     }
+    input.Pos = PosAcc;
     
-    matrix currentBoneMatrix = IDENTITY_MATRIX;
-    for (int i = 0; i < 4; i++)
+    
+    matrix skinRotMat = ZERO_MATRIX;
+    for (i = 0; i < 4; i++)
     {
         if (input.jointIndices[i] == INVALID_IDX)
         {
-            continue;
+            break;
         }
-        currentBoneMatrix = mul(mul(currentBoneMatrix, CurrentJoint[input.jointIndices[i]]), input.jointWeights[i]);
+        skinRotMat += mul(SkeletonJointInverse[input.jointIndices[i]].RotMatrix, CurrentJoint[input.jointIndices[i]].RotMatrix) * input.jointWeights[i];
     }
+    input.Normal = mul(input.Normal, skinRotMat);
+    input.Tangent = mul(input.Tangent, skinRotMat);
     
     
-    if(inverseBoneMatrix[0][0] != 188135.489457)
-    {
-//        inverseBoneMatrix = IDENTITY_MATRIX;
-//        currentBoneMatrix = IDENTITY_MATRIX;
-    }
-    input.Pos = mul(input.Pos, inverseBoneMatrix);
-    input.Pos = mul(input.Pos, currentBoneMatrix);
 #endif
     
     
@@ -162,8 +178,6 @@ float3 ComputeNormal(PS_INPUT psInput)
     normal = txNormal.Sample(samLinear, psInput.UV0) * 2.0 - 1.0;
     normal = normalize(normal);
     normal = normalize(normal * float3(normalTextureScale, normalTextureScale, 1));
-
-
 
     return mul(normal, tangentFrame);
 }

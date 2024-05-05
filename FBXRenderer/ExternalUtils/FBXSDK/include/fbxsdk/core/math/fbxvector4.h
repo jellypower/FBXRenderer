@@ -278,7 +278,7 @@ public:
 		  * \return The mathematical distance between the two vectors.
 		  * \remarks           Being considered as a XYZ vector with a weight, only the 3 first elements are considered in this operation.
 		  */
-		double Distance(const FbxVector4& pVector) const;
+		double SqrDistance(const FbxVector4& pVector) const;
 
 		/** Normalize the vector, length set to 1.
 		  * \remarks     Being considered as a XYZ vector with a weight, only the first 3 elements are considered in this operation.

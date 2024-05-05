@@ -4,6 +4,12 @@
 #include "SSPlaceableAsset.h"
 
 
+struct JOINTMATRIX
+{
+	XMMATRIX PosMatrix;
+	XMMATRIX RotMatrix;
+};
+
 struct BoneNode
 {
 	SS::FixedStringA<ASSET_NAME_LEN_MAX> _boneName;
@@ -14,6 +20,7 @@ struct BoneNode
 
 	BoneNode(const char* boneName, uint16 parentIdx, uint16 childCnt);
 	BoneNode(BoneNode&& boneNode);
+	BoneNode(const BoneNode& boneNode);
 };
 
 class SSSkeletonAsset : public SSAssetBase

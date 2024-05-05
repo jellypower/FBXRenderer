@@ -228,7 +228,7 @@ public:
 		  * \param pVector The second vector.
 		  * \return The mathematical distance between the two vectors.
 		  */
-		double Distance(const FbxVector2& pVector) const;
+		double SqrDistance(const FbxVector2& pVector) const;
 
 		//! Normalize the vector, length set to 1.
 		void Normalize();

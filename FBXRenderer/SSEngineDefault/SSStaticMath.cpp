@@ -1,7 +1,7 @@
 #include "SSStaticMath.h"
 
 
-XMMATRIX SSStaticMath::InverseRigid(XMMATRIX InMatrix)
+XMMATRIX SS::InverseRigid(XMMATRIX InMatrix)
 {
 	XMMATRIX InverseRigid;
 	InverseRigid.r[0].m128_f32[0] = InMatrix.r[0].m128_f32[0];

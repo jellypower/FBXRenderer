@@ -16,13 +16,15 @@ namespace SS
 		uint32 _size = 0;
 
 	public:
-		PooledList(uint32 capacity);
+		PooledList(uint32 capacity = 0);
 		PooledList(const PooledList<T>& origin);
 		PooledList(PooledList<T>&& origin);
 		~PooledList();
 
 		void PushBack(const T& newData);
 		void PushBack(T&& newData);
+
+		void PushBackCapacity(const T& newData);
 
 		void Resize(uint32 newSize);
 		void Clear();
@@ -34,7 +36,7 @@ namespace SS
 		FORCEINLINE uint32 GetSize() const { return _size; }
 		FORCEINLINE uint32 GetCapacity() const { return _capacity; }
 
-		FORCEINLINE T* GetData() { return _data; }
+		FORCEINLINE T* GetData() const { return _data; }
 		FORCEINLINE T& operator[](const uint32 idx)  const;
 		PooledList<T>& operator=(PooledList<T>&& origin);
 
@@ -95,6 +97,7 @@ namespace SS
 	template <typename T>
 	PooledList<T>::PooledList(uint32 capacity)
 	{
+		_capacity = capacity;
 		_size = 0;
 		_data = nullptr;
 		if (capacity != 0) {
@@ -112,7 +115,7 @@ namespace SS
 
 		for(uint32 i=0;i < _size;i++)
 		{
-			new(_data + _size) T(origin[i]);
+			new(_data + i) T(origin[i]);
 		}
 	}
 
@@ -153,13 +156,23 @@ namespace SS
 		_size++;
 	}
 
+	template<typename T>
+	inline void PooledList<T>::PushBackCapacity(const T& newData)
+	{
+		if (_size >= _capacity)
+		{
+			IncreaseCapacityAndCopy(GetCapacity() * 2);
+		}
+		PushBack(newData);
+	}
+
 	template <typename T>
 	void PooledList<T>::Resize(uint32 newSize)
 	{
 		assert(newSize <= _capacity);
 
 		for (uint32 i = _size; i < newSize; i++)
-			new(_data + _size) T();
+			new(_data + i) T();
 
 		for (uint32 i = newSize; i < _size; i++)
 			_data[i].~T();

@@ -110,7 +110,7 @@ public:
     double GetFogDensity() const;
 
     /** Sets the distance from the view where the fog begins.
-      * \param pStart                   Distance where the fog begins.
+      * \param pStart                   SqrDistance where the fog begins.
       * \remarks                        This function is only used when the fog mode is set to linear. The new value is clamped to fit inside the interval [0, FogEnd()].
       */
     void SetFogStart(double pStart);
@@ -122,7 +122,7 @@ public:
     double GetFogStart() const;
 
     /** Sets the distance from the view where the fog ends.
-      * \param pEnd                     Distance where the fog ends.
+      * \param pEnd                     SqrDistance where the fog ends.
       * \remarks                        This function is only used when the fog mode is set to linear. The new value is adjusted to fit within the interval [FogStart(), inf).
       */
     void SetFogEnd(double pEnd);
