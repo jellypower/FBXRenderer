@@ -31,6 +31,8 @@ public:
 
 
 	void InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext);
+	void ReleaseGPUBuffer();
+
 	void UpdateGPUBufferFrameState(ID3D11DeviceContext* InDeviceContext, uint32 curFrameIdx);
 	void ResetJointBufferState(ID3D11DeviceContext* InDeviceContext);
 	FORCEINLINE ID3D11Buffer* const* GetJointBufferPtr() const { return &_jointBuffer; }

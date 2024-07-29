@@ -95,7 +95,12 @@ void SSSkeletonAsset::ReleaseGPUBuffer()
 {
 	for (int i = 0; i < _boneList.GetSize(); i++) {
 		if (_jointBuffer != nullptr)
+		{
 			_jointBuffer->Release();
-		_jointBuffer = nullptr;
+			_jointBuffer = nullptr;
+
+			_jointBufferSRV->Release();
+			_jointBufferSRV = nullptr;
+		}
 	}
 }

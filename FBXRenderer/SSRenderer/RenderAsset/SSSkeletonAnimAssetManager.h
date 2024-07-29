@@ -26,6 +26,7 @@ public:
 	}
 
 	void InstantiateAllAsets(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext);
+	void ReleaseAllAssets();
 
 
 protected:

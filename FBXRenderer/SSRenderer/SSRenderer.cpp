@@ -437,6 +437,7 @@ void SSRenderer::CleanUp()
 	SSSkeletonAssetManager::Get()->ReleaseAllSkeletons();
 	SSSkeletonAssetManager::Get()->Release();
 
+
 	SSMaterialAssetManager::Get()->ReleaseAllMaterials();
 	SSMaterialAssetManager::Get()->Release();
 

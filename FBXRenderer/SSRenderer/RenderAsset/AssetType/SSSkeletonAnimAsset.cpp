@@ -57,6 +57,15 @@ void SSSkeletonAnimAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11Dev
 	}
 }
 
+void SSSkeletonAnimAsset::ReleaseGPUBuffer()
+{
+	if (_jointBuffer != nullptr)
+	{
+		_jointBuffer->Release();
+		_jointBufferSRV->Release();
+	}
+}
+
 static void UpdateJointBufferRecursive(JOINTMATRIX* joints, const SS::PooledList<BoneNode>& bones,
 	const Transform* transformList, Transform parentTransform, uint32 idx)
 {
