@@ -444,6 +444,9 @@
     <ClInclude Include="SSRenderer\RenderAsset\SSSkeletonAnimAssetManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SSEngineDefault\SSContainer\SHasher.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FBXRenderer.cpp">
@@ -582,6 +585,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="SSRenderer\RenderAsset\SSSkeletonAnimAssetManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SSEngineDefault\SSContainer\SHasher.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

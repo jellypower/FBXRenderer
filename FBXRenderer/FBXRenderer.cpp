@@ -172,7 +172,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow, RECT WindowSize)
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_FBXRENDERER));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_FBXRENDERER); // MFC로 창 만들어서 등록
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_FBXRENDERER); // Win32로 창 만들어서 등록
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 

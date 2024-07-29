@@ -155,6 +155,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="SSEngineDefault\SSContainer\SHasher.h" />
     <ClInclude Include="SSRenderer\RenderAsset\AssetManagerContainer.h" />
     <ClInclude Include="ExternalUtils\CapnProto\include\capnp\any.h" />
     <ClInclude Include="ExternalUtils\CapnProto\include\capnp\blob.h" />
@@ -304,6 +305,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SSEngineDefault\SSContainer\SHasher.cpp" />
     <ClCompile Include="SSRenderer\RenderAsset\AssetManagerContainer.cpp" />
     <ClCompile Include="ExternalUtils\DDSTextureLoader.cpp" />
     <ClCompile Include="ExternalUtils\ExternalUtils.cpp" />

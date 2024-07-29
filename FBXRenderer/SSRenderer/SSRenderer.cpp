@@ -20,7 +20,7 @@
 #include "RenderAsset/AssetType/SSSkeletonAnimAsset.h"
 
 
-#include <vector>
+#include "SSEngineDefault/SSContainer/SHasher.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -468,6 +468,8 @@ void SSRenderer::CleanUp()
 	if (RenderTargetView) RenderTargetView->Release();
 	if (DepthStencil) DepthStencil->Release();
 	if (DepthStencilView) DepthStencilView->Release();
+
+	SS::SHashA::ClearHashPool();
 }
 
 void SSRenderer::BindModel(const SSModelAsset* modelToBind, uint8 multiMaterialIdx)
@@ -778,6 +780,35 @@ void SSRenderer::PerFrame()
 
 		}
 		ImGui::End();
+	}
+
+	// mySTL Test
+	{
+
+		for (uint32 i = 0; i < 2048; i++)
+		{
+			char str[10];
+			itoa(i, str, 10);
+			SS::SHashA Value(str);
+		}
+
+		SS::SHashA Value("1622");
+
+
+		SS::SHashA Hash1("1586");
+		SS::SHashA Hash2("1586");
+		SS::SHashA Hash3("17");
+		SS::SHashA Hash4("17");
+
+		bool result1 = Hash1 == Hash2;
+		bool result2 = Hash4 == Hash3;
+		bool result3 = Hash1 == Hash1;
+		bool result4 = Hash4 == Hash1;
+
+		
+
+
+		int a = 10;
 	}
 
 
