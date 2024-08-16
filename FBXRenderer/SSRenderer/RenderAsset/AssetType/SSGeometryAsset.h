@@ -8,6 +8,8 @@
 
 
 constexpr uint32 SUBGEOM_COUNT_MAX = 16;
+constexpr uint32 VERTEX_UV_MAP_COUNT_MAX = 2;
+constexpr uint32 VERTEX_SKINNING_BONE_COUNT_MAX = 4;
 
 struct SimpleVertex
 {
@@ -19,13 +21,13 @@ struct alignas(16) SSDefaultVertex {
 	Vector4f Pos;
 	Vector4f Normal;
 	Vector4f Tangent;
-	Vector2f Uv[2];
+	Vector2f Uv[VERTEX_UV_MAP_COUNT_MAX];
 };
 
 struct SSSkinnedVertex : SSDefaultVertex
 {
-	uint32 BoneIdx[4] = { 0, };
-	float Weight[4] = { 0, };
+	uint32 BoneIdx[VERTEX_SKINNING_BONE_COUNT_MAX] = { 0, };
+	float Weight[VERTEX_SKINNING_BONE_COUNT_MAX] = { 0, };
 };
 
 enum class EMeshType
