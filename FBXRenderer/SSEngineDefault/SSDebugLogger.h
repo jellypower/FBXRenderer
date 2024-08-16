@@ -21,13 +21,21 @@
 
 #define __CLASS__ (typeid(*this).name())
 
-#define SS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__  __VA_OPT__(,) __VA_ARGS__), __debugbreak()
-#define WSS_CLASS_ERR_LOG(STR, ...) printf_s("Error(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__  __VA_OPT__(,) __VA_ARGS__), __debugbreak()
-#define SS_CLASS_WARNING_LOG(STR, ...) printf_s("Warning(%s:%s, Line: %d): "##STR "\n", __CLASS__, __func__, __LINE__  __VA_OPT__(,) __VA_ARGS__)
+#define SS_LOG_CLASS_FUNC_LINE() printf_s("%s::%s, Line: %d:", __CLASS__, __func__, __LINE__)
 
-#define SS_ASSERT(EXPRESSION, MESSAGE, ...) (void)(				\
+#define SS_CLASS_ERR_LOG(...) SS_LOG_CLASS_FUNC_LINE(), \
+    printf_s(", ERROR) " __VA_ARGS__), __debugbreak()
+
+#define WSS_CLASS_ERR_LOG(...) SS_LOG_CLASS_FUNC_LINE(), \
+    printf_s(", WARNING) " __VA_ARGS__), __debugbreak()
+
+#define SS_CLASS_WARNING_LOG(...) SS_LOG_CLASS_FUNC_LINE(), \
+    printf_s(", WARNING) " __VA_ARGS__), __debugbreak()
+
+
+#define SS_ASSERT(EXPRESSION, ...) (void)(				\
 			(!!(EXPRESSION)) ||									\
-			(SS_CLASS_ERR_LOG(MESSAGE  __VA_OPT__(,) __VA_ARGS__), 0))
+			(SS_CLASS_ERR_LOG(__VA_ARGS__), 0))
 
 #define WASSERT_WITH_MESSAGE(EXPRESSION, MESSAGE) (void)(										\
             (!!(EXPRESSION)) ||                                                                 \

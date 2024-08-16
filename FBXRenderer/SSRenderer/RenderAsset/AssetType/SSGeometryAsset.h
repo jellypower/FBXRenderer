@@ -7,7 +7,7 @@
 #include "SSAssetBase.h"
 
 
-constexpr uint32 SUBGEOM_COUNT_MAX = 8;
+constexpr uint32 SUBGEOM_COUNT_MAX = 16;
 
 struct SimpleVertex
 {
