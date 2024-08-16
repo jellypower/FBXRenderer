@@ -94,7 +94,8 @@ private:
 
 	void TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
 	void TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>& boneList, const uint16 boneIdx, XMMATRIX transformMatrix, XMMATRIX rotMatrix);
-	void DrawAnimatedSkeleton();
+	void DrawAnimatedSkeleton(const SS::PooledList<BoneNode>& boneList, const float frameTime, const uint16 boneIdx, Transform transform);
+	// Skeleton 자체를 그리는 함수임 SkinnedMesh그리는 함수 아님
 	void DrawAnimatedSkeletonRecursion(const SS::PooledList<BoneNode>& boneList, const Transform* animTransform, const uint16 boneIdx, Transform transform);
 	
 };

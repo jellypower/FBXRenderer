@@ -361,7 +361,7 @@ void SSFBXImporter::ImportCurrentSceneToSkeletonAnimAsset()
 	int64 frameEnd = end.GetFrameCount(FbxTime::eFrames24);
 	int64 frameCnt = frameEnd - frameStart + 1;
 
-	SSSkeletonAnimAsset* skeletonAnimAsset = DBG_NEW SSSkeletonAnimAsset(assetName, skeletonAsset, frameCnt);
+	SSSkeletonAnimAsset* skeletonAnimAsset = DBG_NEW SSSkeletonAnimAsset(assetName, skeletonAsset, frameCnt, 24);
 	const SS::PooledList<BoneNode>& bones = skeletonAsset->GetBones();
 
 	for (uint32 skeletonIdx = 0; skeletonIdx < bones.GetSize(); skeletonIdx++)

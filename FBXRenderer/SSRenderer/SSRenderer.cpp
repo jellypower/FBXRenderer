@@ -502,8 +502,7 @@ void SSRenderer::BindSkeleton(SSSkeletonAsset* skeletonToBind)
 
 void SSRenderer::BindSkeletonAnim(SSSkeletonAnimAsset* skeletonAnimAsset, float time)
 {
-	uint32 frame = (uint32)(SSFrameInfo::GetElapsedTime() * 24) % 55;
-	skeletonAnimAsset->UpdateGPUBufferFrameState(_deviceContext, frame);
+	skeletonAnimAsset->UpdateGPUBufferFrameState(_deviceContext, time);
 //	skeletonAnimAsset->ResetJointBufferState(_deviceContext);
 	_deviceContext->VSSetShaderResources(4, 1, skeletonAnimAsset->GetJointBufferSRVPtr());
 }
@@ -781,6 +780,15 @@ void SSRenderer::PerFrame()
 
 		}
 		ImGui::End();
+
+
+		ImGui::Begin("Frame Info");
+		{
+			ImGui::Text("Elapsed time: %f", SSFrameInfo::GetElapsedTime());
+			ImGui::Text("Delta time: %f", SSFrameInfo::GetDeltaTime());
+			ImGui::Text("FPS: %f", SSFrameInfo::GetFPS());
+		}
+		ImGui::End();
 	}
 
 	// mySTL Test
@@ -812,30 +820,30 @@ void SSRenderer::PerFrame()
 		int a = 10;
 	}
 
-
 	constexpr float CAM_XROT_MAX = 0.9;
+	constexpr float CAM_ROT_SPEED = 2;
+	constexpr float CAM_SPEED = 3;
+	constexpr float KEYBOARD_CAM_ROT_SPEED = 0.5;
+	constexpr float CAM_ZOOM_SPEED = 1;
+
+
 	// process mouse input
 	if (SSInput::GetMouse(EMouseCode::MOUSE_RIGHT))
 	{
 
-		constexpr float CAM_ROT_SPEED = 1000;
 
-		_camYRotation += SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().X * CAM_ROT_SPEED;
+		_camYRotation += SSInput::GetMouseDelta().X * CAM_ROT_SPEED;
 
 		if (_camXRotation > -XM_PIDIV2 * CAM_XROT_MAX && SSInput::GetMouseDelta().Y > 0)
-			_camXRotation -= SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
+			_camXRotation -= SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
 
 		if (_camXRotation < XM_PIDIV2 * CAM_XROT_MAX && SSInput::GetMouseDelta().Y < 0)
-			_camXRotation -= SSFrameInfo::GetDeltaTime() * SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
+			_camXRotation -= SSInput::GetMouseDelta().Y * CAM_ROT_SPEED;
 
 	}
 
 	// process keyborad input
 	{
-		constexpr float CAM_SPEED = 3;
-		constexpr float CAM_ROT_SPEED = 0.5;
-		constexpr float CAM_ZOOM_SPEED = 1;
-
 		if (SSInput::GetKeyDown(EKeyCode::KEY_W))
 			SS_LOG("W Key down!\n");
 
@@ -867,21 +875,21 @@ void SSRenderer::PerFrame()
 			_renderTarget->SetFOVWithRadians(_renderTarget->GetRadianFOV() + SSFrameInfo::GetDeltaTime() * CAM_ZOOM_SPEED);
 
 		if (SSInput::GetKey(EKeyCode::KEY_RIGHT))
-			_camYRotation += SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+			_camYRotation += SSFrameInfo::GetDeltaTime() * KEYBOARD_CAM_ROT_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_LEFT))
-			_camYRotation -= SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+			_camYRotation -= SSFrameInfo::GetDeltaTime() * KEYBOARD_CAM_ROT_SPEED;
 
 		if (SSInput::GetKey(EKeyCode::KEY_UP))
 		{
 			if (_camXRotation > -XM_PIDIV2 * CAM_XROT_MAX)
-				_camXRotation -= SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+				_camXRotation -= SSFrameInfo::GetDeltaTime() * KEYBOARD_CAM_ROT_SPEED;
 		}
 
 		if (SSInput::GetKey(EKeyCode::KEY_DOWN))
 		{
 			if (_camXRotation < XM_PIDIV2 * CAM_XROT_MAX)
-				_camXRotation += SSFrameInfo::GetDeltaTime() * CAM_ROT_SPEED;
+				_camXRotation += SSFrameInfo::GetDeltaTime() * KEYBOARD_CAM_ROT_SPEED;
 		}
 	}
 
@@ -897,7 +905,9 @@ void SSRenderer::PerFrame()
 
 	uint32 frame = (uint32)(SSFrameInfo::GetElapsedTime() * 24) % 55;
 
-	if (_skeletonAssetCache) {
+
+	if (_skeletonAssetCache)
+	{
 		DrawAnimatedSkeletonRecursion(_skeletonAssetCache->GetBones(), _skeletonAnimCache->GetAnimStack().GetData() + 88 * frame, 0, drawTransform);
 	}
 
@@ -925,7 +935,7 @@ void SSRenderer::TraverseModelCombinationAndDraw(SSPlaceableAsset* asset, XMMATR
 			if (modelAsset->GetGeometry()->GetMeshType() == EMeshType::Skinned)
 			{
 				BindSkeleton(_skeletonAssetCache);
-				BindSkeletonAnim(_skeletonAnimCache, 20);
+				BindSkeletonAnim(_skeletonAnimCache, SSFrameInfo::GetElapsedTime() / 2);
 			}
 
 			const uint32 idxStart = modelAsset->GetGeometry()->GetIndexDataStartIndex(i);
@@ -964,9 +974,9 @@ void SSRenderer::TraverseSkeletonAndDrawRecursion(const SS::PooledList<BoneNode>
 	}
 }
 
-void SSRenderer::DrawAnimatedSkeleton()
+void SSRenderer::DrawAnimatedSkeleton(const SS::PooledList<BoneNode>& boneList, const float frameTime, const uint16 boneIdx, Transform transform)
 {
-
+	
 }
 
 void SSRenderer::DrawAnimatedSkeletonRecursion(const SS::PooledList<BoneNode>& boneList, const Transform* animTransform, const uint16 boneIdx, Transform transform)
@@ -985,9 +995,3 @@ void SSRenderer::DrawAnimatedSkeletonRecursion(const SS::PooledList<BoneNode>& b
 			currentTransform);
 	}
 }
-
-
-
-
-
-// TODO: StructureBuffer에 Transpose해서 값 안넣어줌, 재귀함수 잘못적음

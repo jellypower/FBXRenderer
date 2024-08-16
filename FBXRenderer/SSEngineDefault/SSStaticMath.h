@@ -42,4 +42,9 @@ namespace SS
 
 
 	XMMATRIX InverseRigid(XMMATRIX InMatrix);
+
+
+	Quaternion Slerp(Quaternion lhs, Quaternion rhs, float alpha);
+	Vector4f Lerp(Vector4f lhs, Vector4f rhs, float alpha);
+	Transform Lerp(Transform lhs, Transform rhs, float alpha);
 };

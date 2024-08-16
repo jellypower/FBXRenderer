@@ -1,8 +1,9 @@
 #include "SSSkeletonAnimAsset.h"
+#include "SSEngineDefault/SSStaticMath.h"
 #include "../SSSkeletonAssetManager.h"
 
-SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, const char* skeletonAssetName, const uint32 InframeCnt)
-	: SSAssetBase(AssetType::SkeletonAnim), _frameCnt(InframeCnt), _animStack(0)
+SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, const char* skeletonAssetName, const uint32 InframeCnt, const uint32 InFramePerSec)
+	: SSAssetBase(AssetType::SkeletonAnim), _frameCnt(InframeCnt), _animStack(0), _framePerSec(InFramePerSec)
 {
 	_assetName = assetName;
 	_skeleton = SSSkeletonAssetManager::FindAssetWithName(skeletonAssetName);
@@ -13,8 +14,8 @@ SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, const char* skel
 	_animStack.Resize(newCapacity);
 }
 
-SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, SSSkeletonAsset* InSkeletonAsset, const uint32 InframeCnt)
-	: SSAssetBase(AssetType::SkeletonAnim), _frameCnt(InframeCnt), _animStack(0)
+SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, SSSkeletonAsset* InSkeletonAsset, const uint32 InframeCnt, const uint32 InFramePerSec)
+	: SSAssetBase(AssetType::SkeletonAnim), _frameCnt(InframeCnt), _animStack(0), _framePerSec(InFramePerSec)
 {
 	_assetName = assetName;
 	_skeleton = InSkeletonAsset;
@@ -22,6 +23,11 @@ SSSkeletonAnimAsset::SSSkeletonAnimAsset(const char* assetName, SSSkeletonAsset*
 	uint32 newCapacity = _skeleton->GetBones().GetSize() * _frameCnt;
 	_animStack.IncreaseCapacityAndCopy(newCapacity);
 	_animStack.Resize(newCapacity);
+}
+
+uint32 SSSkeletonAnimAsset::GetBoneCnt() const
+{
+	return _skeleton->GetBones().GetSize();
 }
 
 void SSSkeletonAnimAsset::InstantiateGPUBuffer(ID3D11Device* InDevice, ID3D11DeviceContext* InDeviceContext)
@@ -67,20 +73,21 @@ void SSSkeletonAnimAsset::ReleaseGPUBuffer()
 }
 
 static void UpdateJointBufferRecursive(JOINTMATRIX* joints, const SS::PooledList<BoneNode>& bones,
-	const Transform* transformList, Transform parentTransform, uint32 idx)
+	const Transform* transformBlendList1, const Transform* transformBlendList2, Transform parentTransform, uint32 idx, float alpha)
 {
-	Transform thisTransform = transformList[idx] * parentTransform;
+	
+	Transform thisTransform = SS::Lerp(transformBlendList1[idx] * parentTransform, transformBlendList2[idx] * parentTransform, alpha);
 
 	joints[idx].PosMatrix = XMMatrixTranspose(thisTransform.AsMatrix());
 	joints[idx].RotMatrix = XMMatrixTranspose(thisTransform.Rotation.AsMatrix());
 
 	for (uint32 childIdx : bones[idx]._childs)
 	{
-		UpdateJointBufferRecursive(joints, bones, transformList, thisTransform, childIdx);
+		UpdateJointBufferRecursive(joints, bones, transformBlendList1, transformBlendList2, thisTransform, childIdx, alpha);
 	}
 }
 
-void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDeviceContext, uint32 curFrameIdx)
+void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDeviceContext, float time)
 {
 	D3D11_MAPPED_SUBRESOURCE dataPtr;
 	HRESULT hr = InDeviceContext->Map(_jointBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &dataPtr);
@@ -90,7 +97,24 @@ void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDevic
 
 		uint32 boneCnt = _skeleton->GetBones().GetSize();
 
-		UpdateJointBufferRecursive(joints, _skeleton->GetBones(), _animStack.GetData() + (boneCnt * curFrameIdx), Transform::Identity, 0);		
+		const float frameTime = GetFrameTime();
+		time = fmod(time, frameTime);
+
+		const uint32 blendTransformIdx1 = (uint32)(time / GetFrameTimeInterval());
+		uint32 blendTransformIdx2 = (blendTransformIdx1 + 1);
+		blendTransformIdx2 = blendTransformIdx2 >= _frameCnt ? blendTransformIdx1 : blendTransformIdx2;
+
+		float alpha = fmod(time, GetFrameTimeInterval());
+		alpha = alpha / GetFrameTimeInterval();
+
+		UpdateJointBufferRecursive(
+			joints,
+			_skeleton->GetBones(),
+			_animStack.GetData() + (boneCnt * blendTransformIdx1),
+			_animStack.GetData() + (boneCnt * blendTransformIdx2),
+			Transform::Identity,
+			0,
+			alpha);		
 
 
 		InDeviceContext->Unmap(_jointBuffer, 0);
@@ -100,6 +124,12 @@ void SSSkeletonAnimAsset::UpdateGPUBufferFrameState(ID3D11DeviceContext* InDevic
 		SS_CLASS_ERR_LOG("Buffer update failed.");
 		return;
 	}
+}
+
+void SSSkeletonAnimAsset::UpdateGPUBufferFrameStateTime(ID3D11DeviceContext* InDeviceContext, float frameTime)
+{
+	// TODO: 별도의 버퍼를 두고 선형 메모리에 미리 업데이트를 다 해놓은 다음에 실제로 GPU에 카피하는 방식으로 작동하게 하자
+	// 지금은 일단 Animation 에셋이랑 인스턴스가 분리돼있지만 나중에는 이를 합치자.
 }
 
 

@@ -6,7 +6,7 @@
 #include "framework.h"
 #include "FBXRenderer.h"
 
-#include<shellapi.h>
+#include <shellapi.h>
 #include <shobjidl.h>
 
 #include "imgui.h"
@@ -125,6 +125,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 	SSInput::Get();
 	SSFrameInfo::Get();
 	g_Renderer.BeginFrame();
+	SSFrameInfo::Get()->BeginFrame();
 
 	while (WM_QUIT != msg.message)
 	{
@@ -135,7 +136,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR, int nCmdShow)
 		}
 		else
 		{
-			SSFrameInfo::Get()->ProcessPerFrameBeginEventInternal();
+			SSFrameInfo::Get()->PerFrame();
 			g_Renderer.PerFrame();
 			SSInput::Get()->ProcessInputEndOfFrame();
 		}
