@@ -570,7 +570,6 @@ SSGeometryAsset* SSFBXImporter::GenerateGeometryFromFbxMesh(::FbxMesh* fbxMesh)
 	if (uvChannelCnt > 1 && fbxUV[1]->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
 		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
 
-	NewGeometryAsset->_drawTopologyType = EGeometryDrawTopology::TriangleList;
 	NewGeometryAsset->_meshType = EMeshType::Rigid;
 
 	// 2. alloc vertex memory
@@ -1445,16 +1444,6 @@ SSGeometryAsset* SSFBXImporter::GenerateSkinnedGeometryFromFbxMesh(FbxMesh* fbxM
 	}
 
 
-	// * calculate vertex unit
-	NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPoint;
-	if (FbxNormal->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
-		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
-	if (uvChannelCnt > 0 && fbxUV[0]->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
-		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
-	if (uvChannelCnt > 1 && fbxUV[1]->GetMappingMode() == FbxLayerElement::eByPolygonVertex)
-		NewGeometryAsset->_vertexUnit = EVertexUnit::VertexPerPolygon;
-
-	NewGeometryAsset->_drawTopologyType = EGeometryDrawTopology::TriangleList;
 	NewGeometryAsset->_meshType = EMeshType::Skinned;
 
 

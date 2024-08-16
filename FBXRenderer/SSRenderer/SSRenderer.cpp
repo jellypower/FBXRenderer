@@ -64,24 +64,6 @@ void ExtractFileNameFromFilePath(SS::FixedStringA<ASSET_NAME_LEN_MAX>& OutFileNa
 
 }
 
-static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(EGeometryDrawTopology InTopology) {
-	switch (InTopology) {
-
-	case EGeometryDrawTopology::None:
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	case EGeometryDrawTopology::TriangleList:
-		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case EGeometryDrawTopology::PointList:
-		return D3D10_PRIMITIVE_TOPOLOGY_POINTLIST;
-
-
-	default:
-		assert(false);
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	}
-}
-
-
 NativePlatformType SSRenderer::GetNativePlatformType()
 {
 	return NativePlatformType::WindowsD3D11;
@@ -548,7 +530,7 @@ void SSRenderer::BindGeometry(SSGeometryAsset* geometryAsset)
 	_deviceContext->IASetVertexBuffers(0, 1, geometryAsset->GetVertexBufferPtr(), &stride, &offset);
 	_deviceContext->IASetIndexBuffer(geometryAsset->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
 
-	_deviceContext->IASetPrimitiveTopology(ConvertToD3DTopology(geometryAsset->GetDrawTopology()));
+	_deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 void SSRenderer::BindShader(SSShaderAsset* shaderAsset)

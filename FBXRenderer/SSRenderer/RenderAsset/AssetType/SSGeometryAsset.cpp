@@ -4,23 +4,6 @@
 
 #include <memory.h>
 
-static D3D_PRIMITIVE_TOPOLOGY ConvertToD3DTopology(EGeometryDrawTopology InTopology) {
-	switch (InTopology) {
-
-	case EGeometryDrawTopology::None:
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	case EGeometryDrawTopology::TriangleList:
-		return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	case EGeometryDrawTopology::PointList:
-		return D3D10_PRIMITIVE_TOPOLOGY_POINTLIST;
-
-
-	default:
-		assert(false);
-		return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-	}
-}
-
 SSGeometryAsset::SSGeometryAsset()
 	: SSAssetBase(AssetType::Geometry)
 {
@@ -102,5 +85,5 @@ void SSGeometryAsset::BindGeometry(ID3D11DeviceContext* InDeviceContext, uint32 
 	InDeviceContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &_eachVertexDataSize, &offset);
 	InDeviceContext->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-	InDeviceContext->IASetPrimitiveTopology(ConvertToD3DTopology(_drawTopologyType));
+	InDeviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }

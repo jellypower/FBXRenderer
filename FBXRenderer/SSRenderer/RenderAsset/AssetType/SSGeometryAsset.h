@@ -35,11 +35,6 @@ enum class EMeshType
 	Skinned = 2
 };
 
-enum class EGeometryDrawTopology {
-	None = 0,
-	TriangleList = 1,
-	PointList = 2,
-};
 
 enum class EVertexUnit
 {
@@ -54,7 +49,6 @@ class SSGeometryAsset : public SSAssetBase
 {
 	friend class SSFBXImporter;
 private:
-	EGeometryDrawTopology _drawTopologyType = EGeometryDrawTopology::None; // 없애기
 	EMeshType _meshType = EMeshType::None;
 	EVertexUnit _vertexUnit = EVertexUnit::None; // 없애기
 
@@ -85,7 +79,6 @@ public:
 	bool UsableOnGPU() const { return _vertexBuffer != nullptr; }
 	void ReleaseGPUData();
 
-	void SetDrawTopology(EGeometryDrawTopology InTopology) { _drawTopologyType = InTopology; }
 	void BindGeometry(ID3D11DeviceContext* InDeviceContex, uint32 subGeomIdx = 0) const;
 
 public:
@@ -97,7 +90,6 @@ public:
 	FORCEINLINE ID3D11Buffer* const* GetVertexBufferPtr() const { return &_vertexBuffer; }
 	FORCEINLINE ID3D11Buffer* GetIndexBuffer() const { return _indexBuffer; }
 	FORCEINLINE uint32 GetEachVertexDataSize() const { return _eachVertexDataSize; }
-	FORCEINLINE EGeometryDrawTopology GetDrawTopology() const { return _drawTopologyType; }
 
 
 
